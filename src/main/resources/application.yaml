@@ -1,0 +1,33 @@
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/ry-vue?useSSL=false
+    username: root
+    password: root
+    driver-class-name: com.mysql.jdbc.Driver
+#  默认登录的密码
+  security:
+    user:
+      name: root
+      password: root
+server:
+  port: 8080
+
+mybatis-plus:
+#
+  mapper-locations: classpath*:/mapper/**/*.xml
+  configuration:
+#
+    map-underscore-to-camel-case: true
+#    ??????
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+#
+      id-type: auto
+
+#      ??@TableName
+#      table-prefix: sys_.
+redis:
+  #redis有效期30分钟,如果0及以下表示永久
+  expireTime: 43200
