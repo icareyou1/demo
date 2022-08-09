@@ -1,48 +1,56 @@
 package com.fentric.config;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
+import com.fentric.mapper.IotDeviceMapper;
 import com.fentric.modbus.ModbusByTCP;
+import com.fentric.modbus.ModuleWarmDetection;
 import com.fentric.modbus.ServerReceiveThread;
-import com.fentric.pojo.LoginUser;
+import com.fentric.modbus.WatchingOperationMQ;
+import com.fentric.pojo.IotDevice;
+import com.fentric.service.IotDeviceService;
+import com.fentric.utils.CodeUtils;
+import com.fentric.utils.SpringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.List;
+
+import static com.fentric.modbus.DeviceDataPool.SocketMap;
+import static com.fentric.modbus.DeviceDataPool.ThreadPool;
 
 
+@Component
 public class ServerSocketConfig {
-    //消息队列
-    public static LinkedBlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
-    public static ServerSocket serverSocket=null;
-    //阻塞队列保存,没有线程执行的任务
-    public static final ThreadPoolExecutor threadPool=
-            new ThreadPoolExecutor(15,20,100, TimeUnit.SECONDS,new LinkedBlockingDeque<Runnable>());
+    @Value("${socket.port}")
+    private int port;
 
+    @Bean
+    //此处不用子线程将会导致阻塞,让tomcat启动不了
     public void createServerSocket(){
-        try {
-            serverSocket=new ServerSocket(9999);
-            while (true){
-                System.out.println("accept前...");
-                Socket accept = serverSocket.accept();
-                System.out.println("accept后...");
-                String hostAddress = accept.getInetAddress().getHostAddress();
-                int port = accept.getPort();
-                System.out.println("获取客户端:"+hostAddress+":"+port);
-                //设备接入
-                if ("192.168.12.7".equals(hostAddress)){
-                    threadPool.execute(new ModbusByTCP(accept));
-                }else {
-                    threadPool.execute(new ServerReceiveThread(accept));
+        //处理连接线程
+        ThreadPool.execute(new ServerReceiveThread(port));
+        //用户输入线程
+        ThreadPool.execute(new WatchingOperationMQ());
+        //掉线监测，由定时采集处完成
+        //自动采集线程(分模块采集)
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                long l = System.currentTimeMillis();
+                while (true){
+                    if (System.currentTimeMillis()-l>5000){
+                        l=System.currentTimeMillis();
+                        System.out.println("warm模块启动检测...");
+                        ThreadPool.execute(new ModuleWarmDetection());
+                    }
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        }).start();
     }
 }

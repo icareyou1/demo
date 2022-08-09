@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--日志级别：off->fatal->error->warn->info->debug->trace->all-->
+<!--status="warm":用于设置log4j2自身内部日志的日志输出等级,默认为off-->
+<!--monitorInterval="5":间隔秒数,自动检测配置文件的变更和重新配置本身-->
+<configuration status="warn" monitorInterval="5">
+
+    <!--定义一些常量,之后可以使用${变量名}来使用-->
+    <properties>
+        <!-- LOG_HOME:指定当前日志文件存放的目录 -->
+        <property name="LOG_HOME">logs</property>
+    </properties>
+    <!--定义输出内容,输出格式,输出方式,日志保存策略等,常用标签有Console,File,RollingFile,RandomAccessFile-->
+    <Appenders>
+        <!--使用控制台输出的配置-->
+        <Console name="Console" target="SYSTEM_OUT">
+            <!--
+            日志输出格式：
+            %d{yyyy-MM-dd HH:mm:ss}     时间格式
+            [%t]或[%thread]              线程
+            -                           一个间隔符
+            %n                          换行
+            %msg或%m                     log信息
+            [%-5level]                  输出日志级别，-5表示左对齐并且固定输出5个字符，如果不足在右边补0
+            %c{参数}                     输出LoggerFactory.getLogger(xxx.class)中xxx.class的全类名,参数指定多少,直接用%c也行
+            %L                          表示输出行号
+            %l                          输出完整的错误信息
+            %highlight{xxxx}            高亮显示,要在VM options中配置  -Dlog4j.skipJansi=false
+            -->
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %highlight{[%-level]} [%thread] %c{36}:%L --- %m%n" />
+        </Console>
+        <!--输出日志信息到本地-->
+        <!--append="false":日志策略,每次输入前清空文件,主要用于测试-->
+        <File name="file" fileName="${LOG_HOME}/myfile.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%-level] [%thread] %c{36}:%L --- %m%n" />
+        </File>
+
+        <RollingFile name="rollingFile" fileName="${LOG_HOME}/rollingFile-${date:yyyy-MM-dd}/myrollog.log"
+                     filePattern="${LOG_HOME}/rollingFile-${date:yyyy-MM-dd}/myrollog-%d{yyyy-MM-dd-HH}-%i.log">
+            <!--日志输出过滤,高于debug则接受,低于则丢弃-->
+            <ThresholdFilter level="debug" onMatch="ACCEPT" onMismatch="DENY" />
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%-level] [%thread] %c{36}:%L --- %m%n" />
+            <!--滚动更新触发策略-->
+            <Policies>
+                <!--<OnStartupTriggeringPolicy />-->
+                <!--当日志文件大于size时,将根据filePattern,进行重新命名-->
+                <SizeBasedTriggeringPolicy size="10MB" />
+                <!--经过时间后重新命名-->
+                <!--<TimeBasedTriggeringPolicy />-->
+            </Policies>
+            <!--同一文件夹下最大容纳30个，与 %i相配合-->
+            <DefaultRolloverStrategy max="30" />
+        </RollingFile>
+
+    </Appenders>
+
+    <!--只有定义了logger,并引入appender,appender才会生效-->
+    <Loggers>
+        <!--过滤spring和mybatis一些无用的debug信息,logger节点单独指定日志形式,name为包路径-->
+        <logger name="org.springframework" level="info"></logger>
+        <logger name="com.alibaba" level="info"></logger>
+        <logger name="org.mybatis" level="info"></logger>
+        <!--<logger name="com.fentric" level="warn"></logger>-->
+
+        <!--<logger name="com.fentric.pojo.CatFactoryBean" level="warn"></logger>-->
+        <Root level="debug">
+            <AppenderRef ref="Console" />
+            <!--<AppenderRef ref="file"/>-->
+            <AppenderRef ref="rollingFile"/>
+        </Root>
+
+    </Loggers>
+</configuration>

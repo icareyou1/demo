@@ -30,7 +30,7 @@ import java.util.Collections;
 
 public class CodeGenerator {
     public static void main(String[] args) {
-        FastAutoGenerator.create("jdbc:mysql://localhost:3306/ry-vue", "root", "root")
+        FastAutoGenerator.create("jdbc:mysql://localhost:3306/fentric_002", "root", "root")
                 .globalConfig(builder -> {
                     builder.author("zhouqi") // 设置作者
                             //.enableSwagger() // 开启 swagger 模式
@@ -44,7 +44,7 @@ public class CodeGenerator {
                             .pathInfo(Collections.singletonMap(OutputFile.xml, System.getProperty("user.dir") + "/src/main/resources/mapper")); // 设置Xml生成路径
                 })
                 .strategyConfig(builder -> {
-                    builder.addInclude("sys_menu")//设置需要生成的表名,不配置全部
+                    builder.addInclude("iot_event")//设置需要生成的表名,不配置全部
                             .serviceBuilder()
                             .formatServiceFileName("%sService"); // 设置需要生成的表名
                     //.addTablePrefix("article");

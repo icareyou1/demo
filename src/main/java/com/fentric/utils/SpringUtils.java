@@ -1,18 +1,17 @@
 package com.fentric.utils;
 
 import org.springframework.beans.BeansException;
-import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ContextUtils implements ApplicationContextAware {
+public class SpringUtils implements ApplicationContextAware {
     private static ApplicationContext applicationContext;
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        if (ContextUtils.applicationContext==null){
-            ContextUtils.applicationContext=applicationContext;
+        if (SpringUtils.applicationContext==null){
+            SpringUtils.applicationContext=applicationContext;
         }
     }
     //获取applicationContext
