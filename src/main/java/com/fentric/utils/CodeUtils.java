@@ -1,9 +1,17 @@
 package com.fentric.utils;
 
+import com.fentric.domain.Modbus;
+import lombok.extern.slf4j.Slf4j;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
+import java.util.Random;
 import java.util.UUID;
-
+@Slf4j
 public class CodeUtils {
 
     /**
@@ -56,6 +64,27 @@ public class CodeUtils {
         }
         //交换高低位
         return result.substring(2, 4) + result.substring(0, 2);
+    }
+    //排除校验码,返回int值
+    public static int getCRCInt(byte[] bytes){
+        //CRC寄存器全为1
+        int CRC = 0x0000ffff;
+        //多项式校验值
+        int POLYNOMIAL = 0x0000a001;
+        int i, j;
+        //排除两个校验码
+        for (i = 0; i < bytes.length-2; i++) {
+            CRC ^= ((int) bytes[i] & 0x000000ff);
+            for (j = 0; j < 8; j++) {
+                if ((CRC & 0x00000001) != 0) {
+                    CRC >>= 1;
+                    CRC ^= POLYNOMIAL;
+                } else {
+                    CRC >>= 1;
+                }
+            }
+        }
+        return CRC;
     }
 
     /**
@@ -128,7 +157,7 @@ public class CodeUtils {
         }
         return sb.toString();
     }
-    //上方重载形式
+    //上方重载形式,如果定义接受byte为1024就要指定获取长度
     public static String byteArrToHexStr(byte[] b,int len) {
         StringBuilder sb=new StringBuilder();
         for (int i = 0; i < len; i++) {
@@ -172,16 +201,6 @@ public class CodeUtils {
             bString += tmp.substring(tmp.length() - 4)+" ";
         }
         return bString;
-    }
-
-    /**
-     * 十六进制字符串转int
-     * @param str
-     * @return
-     */
-    public static long hexStrToLong(String str){
-        String replace = str.replace(" ", "");
-        return Long.parseLong(replace,16);
     }
 
     /**
@@ -242,13 +261,80 @@ public class CodeUtils {
         modbusWithNochecked.append(crcChcek);
         return modbusWithNochecked.toString().toUpperCase();
     }
+    //获取报文荷载信息(针对读保持寄存器有意义)
+    public static String parseHoldingRegistersMessage(String data){
+        log.info("待解析的原始16进制字符串报文（最后多一空格）:{}",data);
+        String temp = data.replace(" ", "");
+        //不是查询指令就返回null
+        if (!"03".equals(temp.substring(2,4))) return null;
+        return temp.substring(6,temp.length()-4);
+    }
 
 
-    public static void main(String[] args) {
-        //从站地址，寄存器地址,数据
-        System.out.println(generateModbus(1, 6, 2000, 65535));
-        //
-        int[] data={65535,1,2,3,4,5,6,7};
-        System.out.println(generateModbusByBatchWrite(1, 2000, data));
+    public static void main(String[] args) throws IOException, InterruptedException {
+        ServerSocket serverSocket = new ServerSocket(9999);
+        Socket accept = serverSocket.accept();
+        System.out.println("新设备接入:"+accept.getInetAddress().getHostAddress()+":"+accept.getPort());
+        InputStream inputStream = accept.getInputStream();
+        byte[] buf=new byte[1024];
+        int len=0;
+        len = inputStream.read(buf);
+        System.out.println("设备注册mac："+byteArrToHexStr(buf,len));
+        Modbus modbus = new Modbus();
+        modbus.setSocket(accept);
+        modbus.setSlaveId(1);
+        //modbus.setFunctionId(3);
+        //modbus.setAddress(1030);
+        //modbus.setQueryLen(1);
+        //写单个寄存器
+
+        //modbus.setAddress(2000);
+        //modbus.setWriteSingleValue(855);
+
+
+        long startTime=System.currentTimeMillis();
+        long currentTime;
+        while (true){
+            /*Thread.sleep(10001);
+            //应该要大于socket超时时间；如果取值相等socket超时，这里必须马上发送指令
+            //查询100个
+            currentTime=System.currentTimeMillis();
+            if (currentTime-startTime>10000){
+                modbus.setFunctionId(3);
+                modbus.setAddress(1100);
+                modbus.setQueryLen(100);
+                modbus=IOUtils.readHoldingRegisters(modbus);
+                System.out.println("完整的modbus："+modbus);
+                startTime=currentTime;
+            }*/
+            //Thread.sleep(10001);
+            //写多个
+            currentTime=System.currentTimeMillis();
+            //todo  明天解决批量写入问题
+            if (currentTime-startTime>1000){
+                int[] ints=new int[8];
+                for (int i=0;i<8;i++){
+                    ints[i]=1;
+                    if (i==1) ints[i]=2;
+                }
+                modbus.setFunctionId(16);
+                modbus.setWriteMultiValues(ints);
+                modbus=IOUtils.writeMultiRegister(modbus);
+                System.out.println("完整的modbus："+modbus);
+                startTime=currentTime;
+            }
+            /*Thread.sleep(10001);
+            //写单个
+            currentTime=System.currentTimeMillis();
+            if (currentTime-startTime>10000){
+                int i = new Random().nextInt(65536);
+                modbus.setFunctionId(6);
+                modbus.setWriteSingleValue(i);
+                modbus = IOUtils.writeSingleRegister(modbus);
+                System.out.println("完整的modbus："+modbus);
+                startTime=currentTime;
+            }*/
+
+        }
     }
 }

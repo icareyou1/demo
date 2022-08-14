@@ -7,6 +7,7 @@ import com.fentric.pojo.IotEvent;
 import com.fentric.pojo.IotWarm;
 import com.fentric.utils.CodeUtils;
 import com.fentric.utils.IOUtils;
+import com.fentric.utils.SetObjComboFields;
 import com.fentric.utils.SpringUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,14 +23,14 @@ import static com.fentric.modbus.DeviceDataPool.SocketMap;
 @Slf4j
 public class ModuleEventDetection implements Runnable{
     //记录编号缓存(0-65535)
-    public static Map<Long,Short> RecordIdMap=new HashMap<>();
+    public static Map<Long,Integer> RecordIdMap=new HashMap<>();
     @Override
     public void run() {
         //key为设备id，所有在线设备
         Set<Long> keys = SocketMap.keySet();
         IotEventMapper iotEventMapper = SpringUtils.getBean("iotEventMapper", IotEventMapper.class);
-        //先查询当前记录编号
-        byte[] codeByte = CodeUtils.hexStrToByteArr(CodeUtils.generateModbus(1, 3, 1091, 1));
+        //先查询当前记录编号(1091)
+        byte[] codeByte = CodeUtils.hexStrToByteArr(CodeUtils.generateModbus(1, 3, 1090, 1));
         for (Long key : keys) {
             //如果socket掉线服务器不知道，只有读不到的数据知道
             Socket socket = SocketMap.get(key);
@@ -45,19 +46,19 @@ public class ModuleEventDetection implements Runnable{
                 String temp = data.replace(" ", "");
                 //直接将记录编号16进制(如00CF)转换成编号
                 Short recordId = Short.parseShort(temp.substring(6,temp.length()-4),16);*/
-                Short recordId = Short.parseShort(IOUtils.getDataFromDevice(socket, codeByte),16);
+                Integer recordId = Integer.parseInt(IOUtils.getDataFromDevice(socket, codeByte),16);
                 //获取缓存中记录编号
-                Short cacheRecordId = RecordIdMap.get(key);
+                Integer cacheRecordId = RecordIdMap.get(key);
                 //如果缓存获取不到，就从数据库中获取最新的
                 if (cacheRecordId==null){
                     //查询数据库(查询该设备最新),将数据库数据放入缓存
                     LambdaQueryWrapper<IotEvent> wrapper = new LambdaQueryWrapper<>();
-                    wrapper.select(IotEvent::getd1091);
-                    wrapper.eq(IotEvent::getd1091,key);
+                    wrapper.select(IotEvent::getD1090);
+                    wrapper.eq(IotEvent::getD1090,key);
                     wrapper.orderByDesc(IotEvent::getCreateTime).last("limit 1");
                     IotEvent iotEvent = iotEventMapper.selectOne(wrapper);
                     if (iotEvent!=null){
-                        Short queryRecordId = iotEvent.getd1091();
+                        Integer queryRecordId = iotEvent.getD1090();
                         //数据库有数据就放入缓存中
                         if (queryRecordId!=null){
                             RecordIdMap.put(key,queryRecordId);
@@ -71,13 +72,38 @@ public class ModuleEventDetection implements Runnable{
                     log.info("经过缓存的数据仍然为空{}",cacheRecordId);
                     //如果没有记录，那么代表设备刚刚激活，默认只查询一条
                     //1.首先设置设备记录编号(2081)为recorId
-                    String set2081HexStr = CodeUtils.generateModbus(1, 6, 2081, recordId);
+                    String set2081HexStr = CodeUtils.generateModbus(1, 6, 2080, recordId);
                     byte[] set2081 = CodeUtils.hexStrToByteArr(set2081HexStr);
                     //会返回同指令一样的数据
-                    String result = IOUtils.getDataFromDevice(socket, set2081);
-                    if (result!=null&&set2081HexStr.equals(result)) System.out.println("设置成功");
+                    String result = IOUtils.setDeviceValue(socket, set2081);
+                    log.info("2081返回指令为{}",result);
+                    //if (result!=null&&set2081HexStr.equals(result)) log.info("2081返回指令为{}",result);
                     //2.查询1100至1365,分三次查询
-
+                    byte[][] query1100_1365={CodeUtils.hexStrToByteArr(CodeUtils.generateModbus(1, 3, 1100, 66)),
+                            CodeUtils.hexStrToByteArr(CodeUtils.generateModbus(1, 3, 1166, 100)),
+                            CodeUtils.hexStrToByteArr(CodeUtils.generateModbus(1, 3, 1266, 100))};
+                    StringBuilder resultStringBuilder = new StringBuilder();
+                    for (byte[] bytes : query1100_1365) {
+                        resultStringBuilder.append(IOUtils.getDataFromDevice(socket, bytes));
+                    }
+                    log.info("resultStringBuilder长度为{}",resultStringBuilder.length());
+                    //IotEvent iotEvent1 = new IotEvent();
+                    //设置1100到1110(0-65535)  前11个有效
+                    Integer[] ints= new Integer[11];
+                    for (int i=0;i<11;i++){
+                        //因为这里的数据都比较小，直接转换即可
+                        //ints[i]=(int)CodeUtils.hexStrToLong(resultStringBuilder.substring(i*4, i*4 + 4));
+                    }
+                    IotEvent iotEvent = SetObjComboFields.setObj(IotEvent.class, ints, "d1100", "d1110");
+                    //设置deviceId
+                    iotEvent.setDeviceId(key);
+                    //设置1091   (0-65535)
+                    iotEvent.setD1090(recordId);
+                    //中间9个为空
+                    //后面全为电流波形
+                    String currentWaveForm = resultStringBuilder.substring(80);
+                    iotEvent.setD1120to1365(currentWaveForm);
+                    log.info("封装后的数据为{}",iotEvent);
                 }else {//如果能从缓存中取到数据
                     int RecordCount=recordId-cacheRecordId;
                     //如果recordId>cacheRecordId
@@ -142,6 +168,10 @@ public class ModuleEventDetection implements Runnable{
                 //    break;
                 //}
             } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
 

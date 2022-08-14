@@ -53,20 +53,35 @@
 
     </Appenders>
 
+    <!-- loggers节点，常见的有两种:root和logger.
+　　　　　　　  root节点用来指定项目的根日志，如果没有单独指定logger，那么就会默认使用该root日志输出
+　　　　　　　　　level:日志输出级别，共有8个级别，按照从低到高为：All < Trace < Debug < Info < Warn < Error < Fatal < OFF.
+　　　　　　　　　appender-ref：root的子节点，用来指定该日志输出到哪个Appender.
+　　　　　　　  logger节点用来单独指定日志的形式，比如要为指定包下的class指定不同的日志级别等。
+　　　　　　　　　level:日志输出级别，共有8个级别，按照从低到高为：All < Trace < Debug < Info < Warn < Error < Fatal < OFF.
+　　　　　　　　　name:用来指定该logger所适用的类或者类所在的包全路径,继承自root节点.
+　　　　　　　　　appender-ref：logger的子节点，用来指定该日志输出到哪个Appender,如果没有指定，就会默认继承自root.如果指定了，那么会在指定的这个Appender和root的Appender中都会输出，此时我们可以设置logger的additivity="false"只在自定义的Appender中进行输出。 -->
     <!--只有定义了logger,并引入appender,appender才会生效-->
     <Loggers>
         <!--过滤spring和mybatis一些无用的debug信息,logger节点单独指定日志形式,name为包路径-->
-        <logger name="org.springframework" level="info"></logger>
-        <logger name="com.alibaba" level="info"></logger>
-        <logger name="org.mybatis" level="info"></logger>
-        <!--<logger name="com.fentric" level="warn"></logger>-->
+        <!--根日志控制了，可以不用加下面-->
+        <!--<logger name="org.springframework" level="info"></logger>-->
+        <!--<logger name="com.alibaba" level="info"></logger>-->
+        <!--<logger name="org.mybatis" level="info"></logger>-->
+        <!--<logger name="io" level="info"></logger>-->
+        <!--<logger name="com.baomidou" level="info"></logger>-->
+        <!--控制台日志-->
+        <Root level="info">
+            <AppenderRef ref="Console" />
+            <!--<AppenderRef ref="file"/>-->
+            <!--<AppenderRef ref="rollingFile"/>-->
+        </Root>
 
-        <!--<logger name="com.fentric.pojo.CatFactoryBean" level="warn"></logger>-->
-        <Root level="debug">
+        <logger name="com.fentric.utils" level="info" additivity="false">
             <AppenderRef ref="Console" />
             <!--<AppenderRef ref="file"/>-->
             <AppenderRef ref="rollingFile"/>
-        </Root>
+        </logger>
 
     </Loggers>
 </configuration>

@@ -8,9 +8,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserCode {
+    //用户id
     private long userId;
-    private long deviceId;
-    private String code;
-    private Object data;
+    //网关设备id
+    private long gatewayId;
+    //用户发送的modbus
+    private Modbus modbusUserSending;
+    //网关错误信息
     private String error;
+
 }

@@ -3,10 +3,7 @@ package com.fentric.config;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.fentric.mapper.IotDeviceMapper;
-import com.fentric.modbus.ModbusByTCP;
-import com.fentric.modbus.ModuleWarmDetection;
-import com.fentric.modbus.ServerReceiveThread;
-import com.fentric.modbus.WatchingOperationMQ;
+import com.fentric.modbus.*;
 import com.fentric.pojo.IotDevice;
 import com.fentric.service.IotDeviceService;
 import com.fentric.utils.CodeUtils;
@@ -46,8 +43,10 @@ public class ServerSocketConfig {
                 while (true){
                     if (System.currentTimeMillis()-l>5000){
                         l=System.currentTimeMillis();
-                        System.out.println("warm模块启动检测...");
+
                         ThreadPool.execute(new ModuleWarmDetection());
+                        //System.out.println("异常事件检测模块启动....");
+                        //ThreadPool.execute(new ModuleEventDetection());
                     }
                 }
             }

@@ -1,5 +1,7 @@
 package com.fentric.modbus;
 
+import com.fentric.domain.DeviceStatus;
+import com.fentric.domain.Modbus;
 import com.fentric.domain.UserCode;
 
 import java.net.Socket;
@@ -12,17 +14,22 @@ import java.util.concurrent.TimeUnit;
 
 public class DeviceDataPool {
     //done 设备socket连接池,设备id
-    public static Map<Long, Socket> SocketMap=new HashMap<>();
+    //public static Map<Long, Socket> SocketMap=new HashMap<>();
+    public static Map<Long, DeviceStatus> DeviceStatusMap=new HashMap<>();
     //用户指令队列
     public static LinkedBlockingQueue<UserCode> UserCodeMQ = new LinkedBlockingQueue<>();
     //用户指令采集数据结果Map
     public static Map<Long,UserCode> UserCodeDatamap=new HashMap<>();
     //todo 定时采集数据队列（数据库） 线程封装数据库
-    public static LinkedBlockingQueue<String> DeviceDataMQ = new LinkedBlockingQueue<>();
+    public static LinkedBlockingQueue<Modbus> DeviceDataMQ = new LinkedBlockingQueue<>();
     //阻塞队列保存,没有线程执行的任务
     public static final ThreadPoolExecutor ThreadPool=
             //15，20，100
             new ThreadPoolExecutor(15,20,100, TimeUnit.SECONDS,new LinkedBlockingDeque<Runnable>());
+    public static final int DEVICEONLINE=1;
+    public static final int DEVICEOFFLINE=2;
+    public static final int GATEWAYOFFLINE=3;
+    public static final int SERVEROFFLINE=4;
 
 
     /**

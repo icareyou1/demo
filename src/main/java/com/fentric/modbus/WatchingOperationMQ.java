@@ -1,11 +1,10 @@
 package com.fentric.modbus;
 
+import com.fentric.domain.Modbus;
 import com.fentric.domain.UserCode;
 import com.fentric.pojo.IotRun;
 import com.fentric.service.IotRunService;
-import com.fentric.utils.CodeUtils;
-import com.fentric.utils.SetObjComboFields;
-import com.fentric.utils.SpringUtils;
+import com.fentric.utils.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,132 +23,52 @@ public class WatchingOperationMQ implements Runnable{
         while (true){
             //首先获取指令，看是否有线程匹配，没有就返回对应异常
             try {
+                //没有获取将会一直阻塞
                 UserCode userCode = UserCodeMQ.take();
-                long deviceId = userCode.getDeviceId();
-                Socket socket = SocketMap.get(deviceId);
-                //为空直接跳转下一次
+                //网关id
+                long gatewayId = userCode.getGatewayId();
+                Socket socket = SocketMap.get(gatewayId);
+                //为空直接跳转下一次，为空情况下是被踢出了
                 if (socket==null) {
                     userCode.setError("网关设备不在线");
                     DeviceDataPool.UserCodeDatamap.put(userCode.getUserId(),userCode);
                     continue;
                 }
-                //如果异常？
-                InputStream inputStream = socket.getInputStream();
-                OutputStream outputStream = socket.getOutputStream();
-                if (userCode.getCode()!=null){
-                    byte[] codeByte = CodeUtils.hexStrToByteArr(userCode.getCode());
-                    outputStream.write(codeByte);
-                    byte[] bytes=new byte[1024];
-                    int len=0;
-                    //spd未上电会阻塞
-                    socket.setSoTimeout(500);
-                    //Thread.sleep(1000);
-                    //没有获取到就会阻塞
-                    while ((len=inputStream.read(bytes))!=-1){
-                        String data = CodeUtils.byteArrToHexStr(bytes, len);
-                        String temp = data.replace(" ", "");
-                        StringBuilder replace = new StringBuilder(temp.substring(6,temp.length()-4));
-                        Integer[] ints= new Integer[replace.length() / 4];
-                        for (int i=0;i<replace.length()/4;i++){
-                            //因为这里的数据都比较小，直接转换即可
-                            ints[i]=(int)CodeUtils.hexStrToLong(replace.substring(i*4, i*4 + 4));
-                        }
-                        //todo 将数据放入，数据库处理队列（预先处理数据放入对应库中）
-                        IotRunService iotRunService = SpringUtils.getBean("iotRunServiceImpl", IotRunService.class);
-                        //todo 如何遍历封装？
-                        IotRun iotRun = SetObjComboFields.setObj(IotRun.class, ints, "d1030", "d1079");
-                        //设置设备id
-                        iotRun.setDeviceId(userCode.getDeviceId());
-                        //放入数据
-                        userCode.setData(iotRun);
-                        //放入缓存供controller快速获取
-                        DeviceDataPool.UserCodeDatamap.put(userCode.getUserId(),userCode);
-                        //保存进数据库
-                        //iotRunService.save(iotRun);
-                        //采集数据队列
-                        DeviceDataMQ.offer(data);
-                        //如果不是注册码，就直接break
-                        break;
-                    }
+                Modbus modbusUserSending = userCode.getModbusUserSending();
+                modbusUserSending.setSocket(socket);
+                //判断用户操作类型,3，6，16
+                int functionId = modbusUserSending.getFunctionId();
+                if (functionId==3){
+                    modbusUserSending=IOUtils.readHoldingRegisters(modbusUserSending);
+                }else if (functionId==6){
+                    modbusUserSending=IOUtils.writeSingleRegister(modbusUserSending);
+                }else if (functionId==16){
+                    modbusUserSending=IOUtils.writeMultiRegister(modbusUserSending);
+                }else {
+                    //在前面做好判断，不要来到这一步
                 }
-
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (SocketException e) {
-                e.printStackTrace();
+                //返回非空就代表查询失败
+                if (modbusUserSending.getError()!=null){
+                    //
+                    //todo  1.超时查询就多获取几次，稍后放入数据库晚点展示            2.告诉用户查询失败，
+                    continue;
+                }
+                //放入缓存供controller快速获取
+                userCode.setModbusUserSending(modbusUserSending);
+                DeviceDataPool.UserCodeDatamap.put(userCode.getUserId(),userCode);
+                //将操作查询运行状态表结果放入数据库中(反射创建对象异常)
+                DBUtils.insertRunModbus(modbusUserSending);
+                //todo 采集数据队列,如果使用就将上面的消息放入队列
+                //DeviceDataMQ.offer(modbusUserSending);
             } catch (IOException e) {
-                System.out.println("读取超时...");
+                e.printStackTrace();
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (InstantiationException e) {
                 e.printStackTrace();
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
-
-
-            /*
-            //todo 从map中获取socket
-            for (Long key : SocketMap.keySet()) {
-                System.out.println("----");
-                Socket socket = SocketMap.get(key);
-                //jdk新写法，前提流实现autoclose接口
-                try {
-                    //如果异常？
-                    InputStream input = socket.getInputStream();
-                    OutputStream outputStream = socket.getOutputStream();
-                    //输出数据
-                    while (true){
-                        //接受十六进制字符串，没有则为null
-
-                        System.out.println("userCode---"+userCode);
-                        if (userCode.getCode()!=null){
-                            byte[] codeByte = CodeUtils.hexStrToByteArr(userCode.getCode());
-                            outputStream.write(codeByte);
-                            byte[] bytes=new byte[1024];
-                            int len=0;
-                            //spd未上电会阻塞
-                            socket.setSoTimeout(500);
-                            //Thread.sleep(1000);
-                            //没有获取到就会阻塞
-                            while ((len=input.read(bytes))!=-1){
-                                String data = CodeUtils.byteArrToHexStr(bytes, len);
-                                String temp = data.replace(" ", "");
-                                StringBuilder replace = new StringBuilder(temp.substring(6,temp.length()-4));
-                                Integer[] ints= new Integer[replace.length() / 4];
-                                for (int i=0;i<replace.length()/4;i++){
-                                    //因为这里的数据都比较小，直接转换即可
-                                    ints[i]=(int)CodeUtils.hexStrToLong(replace.substring(i*4, i*4 + 4));
-                                }
-                                //todo 将数据放入，数据库处理队列（预先处理数据放入对应库中）
-                                IotRunService iotRunService = SpringUtils.getBean("iotRunServiceImpl", IotRunService.class);
-                                //todo 如何遍历封装？
-                                IotRun iotRun = SetObjComboFields.setObj(IotRun.class, ints, "d1030", "d1079");
-                                //设置设备id
-                                iotRun.setDeviceId(userCode.getDeviceId());
-                                //放入数据
-                                userCode.setData(iotRun);
-                                //放入缓存供controller快速获取
-                                DeviceDataPool.UserCodeDatamap.put(userCode.getUserId(),userCode);
-                                //保存进数据库
-                                //iotRunService.save(iotRun);
-                                //采集数据队列
-                                DeviceDataMQ.offer(data);
-                                //如果不是注册码，就直接break
-                                if (!("F4 70 0C 73 3D 1B ".equals(data))) break;
-                            }
-                        }
-
-                    }
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }  catch (InstantiationException e) {
-                    e.printStackTrace();
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-            }
-            */
         }
     }
 }

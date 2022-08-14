@@ -164,11 +164,11 @@ public class IotRun implements Serializable {
         this.deviceId = deviceId;
     }
 
-    public String getd1002() {
+    public String getd1022() {
         return d1022;
     }
 
-    public void setd1002(String d1002) {
+    public void setd1022(String d1002) {
         this.d1022 = d1002;
     }
 
