@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.Socket;
+import java.net.*;
 
 @Slf4j
 public class IOUtils {
@@ -36,17 +36,29 @@ public class IOUtils {
     }
     //todo 查询网关在线状态
     public static boolean queryGateWayStatus(Socket socket){
-        try {
-            InputStream inputStream = socket.getInputStream();
-            OutputStream outputStream = socket.getOutputStream();
-            outputStream.write("hello".getBytes());
-            int len=0;
-            byte[] bytes=new byte[1024];
-            socket.setSoTimeout(3000);
-            while ((len=inputStream.read(bytes))!=-1){
-                String s = new String(bytes, 0, len);
-                if (s=="ok") return true;
-            }
+        InetAddress address = socket.getInetAddress();
+        int port = 48899;
+        byte[] openATBytes = "WWW.USR.CN".getBytes();
+        byte[] querySocketBytes = "AT+SOCKLK\n".getBytes();  //长度为10
+        try(
+                DatagramSocket udp = new DatagramSocket();
+            )
+        {
+            DatagramPacket openATPacket = new DatagramPacket(openATBytes,openATBytes.length,address,port);
+            DatagramPacket querySocketPacket = new DatagramPacket(querySocketBytes, querySocketBytes.length, address, port);
+            udp.send(openATPacket);
+            udp.send(querySocketPacket);
+            byte[] data = new byte[1024];
+            DatagramPacket resultPacket = new DatagramPacket(data, data.length);
+            udp.setSoTimeout(1000);
+            //第一次接受开启at指令的返回数据
+            udp.receive(resultPacket);
+            udp.receive(resultPacket);
+            String second = new String(data, 0, resultPacket.getLength());
+            log.info("查询网关在线状态返回数据:{}",second);
+            if ("\r\n+OK=connect\r\n".equals(second)) return true;
+        } catch (SocketException e) {
+            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -100,7 +112,7 @@ public class IOUtils {
         int sendCount=3;
         //本次指令应收到的字节长度
         int shouldReceiveResultByteLength=1+1+1+2*modbus.getQueryLen()+2;
-        log.info("读保持寄存器应接受字节:{}",shouldReceiveResultByteLength);
+        log.info("本次读取设备{}，接受其读保持寄存器字节数:{}",modbus.getDeviceId(),shouldReceiveResultByteLength);
         //生成指令
         String modbushexStr = CodeUtils.generateModbus(modbus.getSlaveId(), modbus.getFunctionId(), modbus.getAddress(), modbus.getQueryLen());
         byte[] codeByte = CodeUtils.hexStrToByteArr(modbushexStr);

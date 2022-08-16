@@ -8,7 +8,7 @@ import com.fentric.pojo.IotWarm;
 import com.fentric.service.IotRunService;
 
 public class DBUtils {
-    //将告警模块modbus结果存入表中
+    /*//将告警模块modbus结果存入表中
     public static void insertWarmModbus(Modbus modbus){
         IotWarmMapper iotWarmMapper = SpringUtils.getBean("iotWarmMapper", IotWarmMapper.class);
         //放入数据库
@@ -17,7 +17,7 @@ public class DBUtils {
         iotWarm.setd1020to1021(modbus.getData());
         iotWarmMapper = SpringUtils.getBean("iotWarmMapper", IotWarmMapper.class);
         iotWarmMapper.insert(iotWarm);
-    }
+    }*/
 
     //将运行模块modbus结果存入表中
     public static void insertRunModbus(Modbus modbus) throws InstantiationException, IllegalAccessException {

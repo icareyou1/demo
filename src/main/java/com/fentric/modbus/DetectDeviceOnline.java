@@ -15,7 +15,6 @@ import com.fentric.utils.SpringUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,7 +26,7 @@ import static com.fentric.modbus.DeviceDataPool.*;
  * 时间由外面控制线程
  */
 @Slf4j
-public class ModuleWarmDetection implements Runnable{
+public class DetectDeviceOnline implements Runnable{
     //告警量缓存,用来对比
     public static Map<Long,String> WarmDataMap=new HashMap<>();
     /**
@@ -193,8 +192,10 @@ public class ModuleWarmDetection implements Runnable{
                                 log.info("从设备{}查询失败，查询下一个从设备",modbus.getDeviceId());
                                 continue;
                             }
+                            //业务模块，从上面获取modbus
+
                             //尝试获取缓存中的数据
-                            String cacheData = WarmDataMap.get(modbus.getDeviceId());
+                            /*String cacheData = WarmDataMap.get(modbus.getDeviceId());
                             log.info("缓存cacheData数据{}",cacheData);
                             if (cacheData==null||"".equals(cacheData)){
                                 IotWarmMapper iotWarmMapper = SpringUtils.getBean("iotWarmMapper", IotWarmMapper.class);
@@ -225,18 +226,10 @@ public class ModuleWarmDetection implements Runnable{
                                 //放入数据库
                                 IotWarmService iotWarmServiceImpl = SpringUtils.getBean("iotWarmServiceImpl", IotWarmService.class);
                                 iotWarmServiceImpl.addWarmModbus(modbus);
-                            }
+                            }*/
                             //缓存相同就不操作
-                            //解析数据测试
-                            String[] strs= new String[readHoldingRegistersResult.length() / 4];
-                            for (int i=0;i<readHoldingRegistersResult.length()/4;i++){
-                                //因为这里的数据都比较小，直接转换即可
-                                strs[i] = CodeUtils.hexStrTobinStr(readHoldingRegistersResult.substring(i * 4, i * 4 + 4));
-                            }
-                            System.out.println("warm模块获取数据:");
-                            for (String anStr : strs) {
-                                System.out.println(anStr);
-                            }
+
+
                         } catch (IOException e) {
                             System.out.println("读取超时...");
                             slaveFlag=false;

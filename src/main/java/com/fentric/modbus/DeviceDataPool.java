@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 public class DeviceDataPool {
     //done 设备socket连接池,设备id
-    //public static Map<Long, Socket> SocketMap=new HashMap<>();
+    public static Map<Long, Socket> SocketMap=new HashMap<>();
     public static Map<Long, DeviceStatus> DeviceStatusMap=new HashMap<>();
     //用户指令队列
     public static LinkedBlockingQueue<UserCode> UserCodeMQ = new LinkedBlockingQueue<>();

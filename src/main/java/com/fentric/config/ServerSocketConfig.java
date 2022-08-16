@@ -29,19 +29,21 @@ public class ServerSocketConfig {
 
     @Bean
     //此处不用子线程将会导致阻塞,让tomcat启动不了
-    public void createServerSocket(){
+    public void createServerSocket() throws InterruptedException {
         //处理连接线程
         ThreadPool.execute(new ServerReceiveThread(port));
         //用户输入线程
         ThreadPool.execute(new WatchingOperationMQ());
         //掉线监测，由定时采集处完成
         //自动采集线程(分模块采集)
+        Thread.sleep(3000);  //初始化连接
+        ThreadPool.execute(new ModuleWarmDetection());
         new Thread(new Runnable() {
             @Override
             public void run() {
                 long l = System.currentTimeMillis();
                 while (true){
-                    if (System.currentTimeMillis()-l>5000){
+                    if (System.currentTimeMillis()-l>30000){
                         l=System.currentTimeMillis();
 
                         ThreadPool.execute(new ModuleWarmDetection());

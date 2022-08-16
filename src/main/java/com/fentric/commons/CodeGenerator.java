@@ -44,7 +44,7 @@ public class CodeGenerator {
                             .pathInfo(Collections.singletonMap(OutputFile.xml, System.getProperty("user.dir") + "/src/main/resources/mapper")); // 设置Xml生成路径
                 })
                 .strategyConfig(builder -> {
-                    builder.addInclude("iot_event")//设置需要生成的表名,不配置全部
+                    builder.addInclude("iot_online")//设置需要生成的表名,不配置全部
                             .serviceBuilder()
                             .formatServiceFileName("%sService"); // 设置需要生成的表名
                     //.addTablePrefix("article");
