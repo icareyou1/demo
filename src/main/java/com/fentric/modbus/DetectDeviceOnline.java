@@ -7,6 +7,7 @@ import com.fentric.mapper.IotOnlineMapper;
 import com.fentric.mapper.IotWarmMapper;
 import com.fentric.pojo.IotOnline;
 import com.fentric.pojo.IotWarm;
+import com.fentric.service.IotDeviceService;
 import com.fentric.service.IotOnlineService;
 import com.fentric.service.IotWarmService;
 import com.fentric.utils.CodeUtils;
@@ -21,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.fentric.modbus.DeviceDataPool.*;
+import static com.fentric.modbus.ModuleWarmDetection.WarmDataMap;
 
 /**
  * 时间由外面控制线程
@@ -28,26 +30,31 @@ import static com.fentric.modbus.DeviceDataPool.*;
 @Slf4j
 public class DetectDeviceOnline implements Runnable{
     //告警量缓存,用来对比
-    public static Map<Long,String> WarmDataMap=new HashMap<>();
+    //public static Map<Long,String> WarmDataMap=new HashMap<>();
     /**
      *   思路： 根据socket
      */
     @Override
     public void run() {
         System.out.println("warm模块启动检测...");
-        //todo  DeviceSocketMap，先进行获取online的获取，如果为空则从数据库中重新获取  如果socket获取失败则remove
+        //DeviceSocketMap，先进行获取online的获取，如果为空则从数据库中重新获取  如果socket获取失败则remove
         //gatewayIds为网关设备id，所有在线设备
         Set<Long> gatewayIds = DeviceStatusMap.keySet();
         //如果某一设备发生超时，将影响下一个设备按序读取数据的时间
+        //todo 不同网关可以多线程
         for (Long gatewayId : gatewayIds) {
             DeviceStatus deviceStatus = DeviceStatusMap.get(gatewayId);
-            //如果取得null，说明有新的设备加入了
-            if (deviceStatus.getOnline()==null){
+            //如果取得null，说明有新的设备加入了(并且是注册的设备才会有map)
+            if (deviceStatus.getOnline()==null||deviceStatus.getCategory()==null){
                 //1.查询设备表
-                //2.查询状态表，没有状态的表默认为null
+                //2.查询状态表，没有状态的表默认为0
                 IotOnlineService iotOnlineServiceImpl = SpringUtils.getBean("iotOnlineServiceImpl", IotOnlineService.class);
                 int[] ints = iotOnlineServiceImpl.putDevicesStatusIntoIntArray(gatewayId);
                 deviceStatus.setOnline(ints);
+                //3.状态设备类型表
+                IotDeviceService iotDeviceServiceImpl = SpringUtils.getBean("iotDeviceServiceImpl", IotDeviceService.class);
+                int[] category = iotDeviceServiceImpl.queryDeviceCategoryByReceiveGateWayId(gatewayId);
+                deviceStatus.setCategory(category);
             }
             //获取socket，如果设备掉线则会被移除socket
             Socket socket = deviceStatus.getSocket();
@@ -158,82 +165,111 @@ public class DetectDeviceOnline implements Runnable{
                 int onlieLen = online.length;
                 //至少一个子设备才查询，否则不查询
                 if (onlieLen>1){
+                    int[] category = deviceStatus.getCategory();
                     for (int salveindex = 1; salveindex < onlieLen; salveindex++) {
                         boolean slaveFlag=true;//和从设备通信结果标志，true表示成功，false表示本次失败
-                        try {
-                            //先查询告警量
-                            Modbus modbus = new Modbus();
-                            // todo  modbus指令设备编号，要从数据库中查询再缓存
-                            modbus.setDeviceId(gatewayId+salveindex);
-                            modbus.setSocket(socket);
-                            modbus.setSlaveId(salveindex);
-                            modbus.setFunctionId(3);
-                            modbus.setAddress(1020);
-                            modbus.setQueryLen(2);
-                            modbus = IOUtils.readHoldingRegisters(modbus);
-                            //返回非空就代表查询失败
-                            if (modbus.getError()!=null){
-                                //todo  如何进行掉线检测
+                        //根据不同的设备类型进行处理
+                        //发送spd指令
+                        if (category[salveindex]==CATEGORY_SPD){
+                            log.info("当前设备类型为SPD");
+                            try {
+                                //先查询告警量
+                                Modbus modbus = new Modbus();
+                                // todo  modbus指令设备编号，要从数据库中查询再缓存
+                                modbus.setDeviceId(gatewayId+salveindex);
+                                modbus.setSocket(socket);
+                                modbus.setSlaveId(salveindex);
+                                modbus.setFunctionId(3);
+                                modbus.setAddress(1020);
+                                modbus.setQueryLen(71);
+                                modbus = IOUtils.readHoldingRegisters(modbus);
+                                //返回非空就代表查询失败
+                                if (modbus.getError()!=null){
+                                    //todo  如何进行掉线检测
+                                    slaveFlag=false;
+                                    //设备状态1
+                                    if (slaveFlag){
+                                        if (Math.abs(online[salveindex])!=DEVICEONLINE) {
+                                            online[salveindex]=-DEVICEONLINE;
+                                            deviceStatus.setShouldUpdate(true);
+                                        }
+                                    }else {//设备状态2
+                                        if (Math.abs(online[salveindex])!=DEVICEOFFLINE) {
+                                            online[salveindex]=-DEVICEOFFLINE;
+                                            deviceStatus.setShouldUpdate(true);
+                                        }
+                                    }
+                                    deviceStatus.setOnline(online);
+                                    DeviceStatusMap.put(gatewayId,deviceStatus);
+                                    log.info("从设备{}查询失败，查询下一个从设备",modbus.getDeviceId());
+                                    continue;
+                                }
+                                //业务模块，从上面获取modbus
+                                String data = modbus.getData();
+                                //1.解析warm告警模块数据
+                                String warmData = data.substring(0, 8);
+                                //2.解析运行状态模块
+                                String runData = data.substring(8, data.length() - 4);
+                                //3.监测当前事件编号
+                                String eventIdData = data.substring(data.length() - 4);
+
+                                FentricModule fentricModule=new SPDModule();
+                                fentricModule.setModbus(modbus);
+                                //处理warm模块
+                                fentricModule.handleWarmModule();
+                                //处理运行状态
+                                fentricModule.handleRunModule();
+                                //处理异常事件
+                                fentricModule.handldEventModule();
+                                /*//尝试获取缓存中的数据
+                                String cacheData = WarmDataMap.get(modbus.getDeviceId());
+                                log.info("缓存cacheData数据{}",cacheData);
+                                if (cacheData==null||"".equals(cacheData)){
+                                    IotWarmMapper iotWarmMapper = SpringUtils.getBean("iotWarmMapper", IotWarmMapper.class);
+                                    //查询数据库(查询该设备最新),将数据库数据放入缓存
+                                    LambdaQueryWrapper<IotWarm> wrapper = new LambdaQueryWrapper<>();
+                                    wrapper.select(IotWarm::getd1020to1021);
+                                    wrapper.eq(IotWarm::getDeviceId,modbus.getDeviceId());
+                                    //根据创建时间降序,最保险为id排序
+                                    wrapper.orderByDesc(IotWarm::getCreateTime).last("limit 1");
+                                    IotWarm iotWarm = iotWarmMapper.selectOne(wrapper);
+                                    //System.out.println("查询到的数据为："+iotWarm);
+                                    if (iotWarm!=null){
+                                        String queryData = iotWarm.getd1020to1021();
+                                        if (queryData!=null){
+                                            WarmDataMap.put(modbus.getDeviceId(),queryData);
+                                            //再次读取缓存
+                                            cacheData=queryData;
+                                            log.info("再次取得缓存cacheData后数据{}",cacheData);
+                                        }
+                                    }
+                                }
+                                String readHoldingRegistersResult = warmData;
+                                //和缓存数据不同，放入数据库中,和缓存
+                                log.info("readHoldingRegistersResult:{}",readHoldingRegistersResult);
+
+                                if (!readHoldingRegistersResult.equals(cacheData)){
+                                    WarmDataMap.put(modbus.getDeviceId(),readHoldingRegistersResult);
+                                    //放入数据库
+                                    IotWarmService iotWarmServiceImpl = SpringUtils.getBean("iotWarmServiceImpl", IotWarmService.class);
+                                    //todo 新建warmModbus
+                                    Modbus warmModbus=modbus;
+                                    warmModbus.setData(warmData);
+                                    iotWarmServiceImpl.addWarmModbus(warmModbus);
+                                }*/
+                                //缓存相同就不操作
+
+
+                            } catch (IOException e) {
+                                System.out.println("读取超时...");
                                 slaveFlag=false;
-                                //设备状态1
-                                if (slaveFlag){
-                                    if (Math.abs(online[salveindex])!=DEVICEONLINE) {
-                                        online[salveindex]=-DEVICEONLINE;
-                                        deviceStatus.setShouldUpdate(true);
-                                    }
-                                }else {//设备状态2
-                                    if (Math.abs(online[salveindex])!=DEVICEOFFLINE) {
-                                        online[salveindex]=-DEVICEOFFLINE;
-                                        deviceStatus.setShouldUpdate(true);
-                                    }
-                                }
-                                deviceStatus.setOnline(online);
-                                DeviceStatusMap.put(gatewayId,deviceStatus);
-                                log.info("从设备{}查询失败，查询下一个从设备",modbus.getDeviceId());
-                                continue;
+                                e.printStackTrace();
                             }
-                            //业务模块，从上面获取modbus
+                        }
 
-                            //尝试获取缓存中的数据
-                            /*String cacheData = WarmDataMap.get(modbus.getDeviceId());
-                            log.info("缓存cacheData数据{}",cacheData);
-                            if (cacheData==null||"".equals(cacheData)){
-                                IotWarmMapper iotWarmMapper = SpringUtils.getBean("iotWarmMapper", IotWarmMapper.class);
-                                //查询数据库(查询该设备最新),将数据库数据放入缓存
-                                LambdaQueryWrapper<IotWarm> wrapper = new LambdaQueryWrapper<>();
-                                wrapper.select(IotWarm::getd1020to1021);
-                                wrapper.eq(IotWarm::getDeviceId,modbus.getDeviceId());
-                                //根据创建时间降序
-                                wrapper.orderByDesc(IotWarm::getCreateTime).last("limit 1");
-                                IotWarm iotWarm = iotWarmMapper.selectOne(wrapper);
-                                //System.out.println("查询到的数据为："+iotWarm);
-                                if (iotWarm!=null){
-                                    String queryData = iotWarm.getd1020to1021();
-                                    if (queryData!=null){
-                                        WarmDataMap.put(modbus.getDeviceId(),queryData);
-                                        //再次读取缓存
-                                        cacheData=queryData;
-                                        log.info("再次取得缓存cacheData后数据{}",cacheData);
-                                    }
-                                }
-                            }
-                            String readHoldingRegistersResult = modbus.getData();
-                            //和缓存数据不同，放入数据库中,和缓存
-                            log.info("readHoldingRegistersResult:{}",readHoldingRegistersResult);
-
-                            if (!readHoldingRegistersResult.equals(cacheData)){
-                                WarmDataMap.put(modbus.getDeviceId(),readHoldingRegistersResult);
-                                //放入数据库
-                                IotWarmService iotWarmServiceImpl = SpringUtils.getBean("iotWarmServiceImpl", IotWarmService.class);
-                                iotWarmServiceImpl.addWarmModbus(modbus);
-                            }*/
-                            //缓存相同就不操作
-
-
-                        } catch (IOException e) {
-                            System.out.println("读取超时...");
-                            slaveFlag=false;
-                            e.printStackTrace();
+                        //发送接地电阻modbus
+                        if (category[salveindex]==CATEGORY_RESISTANCE){
+                            log.info("当前设备类型为接地电阻");
                         }
                         //设备状态1
                         if (slaveFlag){

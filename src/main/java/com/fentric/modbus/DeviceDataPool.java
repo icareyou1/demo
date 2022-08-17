@@ -26,10 +26,17 @@ public class DeviceDataPool {
     public static final ThreadPoolExecutor ThreadPool=
             //15，20，100
             new ThreadPoolExecutor(15,20,100, TimeUnit.SECONDS,new LinkedBlockingDeque<Runnable>());
+
     public static final int DEVICEONLINE=1;
     public static final int DEVICEOFFLINE=2;
     public static final int GATEWAYOFFLINE=3;
     public static final int SERVEROFFLINE=4;
+    //spd模块
+    public static final int CATEGORY_SPD=1;
+    //接地电阻模块
+    public static final int CATEGORY_RESISTANCE=2;
+    //dr302模块
+    public static final int CATEGORY_GATEWAY=3;
 
 
     /**

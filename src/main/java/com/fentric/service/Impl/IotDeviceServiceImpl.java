@@ -24,11 +24,27 @@ public class IotDeviceServiceImpl extends ServiceImpl<IotDeviceMapper, IotDevice
     @Autowired
     IotDeviceMapper iotDeviceMapper;
     @Override
-    public Long queryDeviceCountByReceiveGateWayId(Long receiveGatewayId) {
+    public int[] queryDeviceCategoryByReceiveGateWayId(Long receiveGatewayId) {
         LambdaQueryWrapper<IotDevice> wrapper = new LambdaQueryWrapper<>();
         wrapper.select(IotDevice::getDeviceId);
+        wrapper.select(IotDevice::getCategoryId);
         wrapper.ge(IotDevice::getDeviceId,receiveGatewayId);
         wrapper.le(IotDevice::getDeviceId,receiveGatewayId+32);
-        return iotDeviceMapper.selectCount(wrapper);
+        List<IotDevice> iotDevices = iotDeviceMapper.selectList(wrapper);
+        //如果查询出来的设备为null
+        if (iotDevices==null){
+            return null;
+        }
+        int[] temp=new int[iotDevices.size()];
+        for (int i = 0; i < iotDevices.size(); i++) {
+            IotDevice iotDevice = iotDevices.get(i);
+            if (iotDevice.getCategoryId()!=null){
+                temp[i]= Math.toIntExact(iotDevice.getCategoryId());
+            }else {//如果设备类型为null则初始化为0
+                temp[i]=0;
+            }
+        }
+
+        return temp;
     }
 }

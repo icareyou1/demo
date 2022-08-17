@@ -15,5 +15,7 @@ public class DeviceStatus {
     private Socket socket;
     //1在线，2不在线，3网关不在线  4服务器未启动    数组长度代表其下设备数
     int[] online;
+    //表示每个从设备的设备类型
+    int[] category;
     boolean shouldUpdate;
 }

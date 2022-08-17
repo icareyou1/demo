@@ -23,7 +23,7 @@ import static com.fentric.modbus.DeviceDataPool.SocketMap;
 @Slf4j
 public class ModuleEventDetection implements Runnable{
     //记录编号缓存(0-65535)
-    public static Map<Long,Integer> RecordIdMap=new HashMap<>();
+    public static Map<Long,Integer> EventIdMap=new HashMap<>();
     @Override
     public void run() {
         //key为设备id，所有在线设备
@@ -48,7 +48,7 @@ public class ModuleEventDetection implements Runnable{
                 Short recordId = Short.parseShort(temp.substring(6,temp.length()-4),16);*/
                 Integer recordId = Integer.parseInt(IOUtils.getDataFromDevice(socket, codeByte),16);
                 //获取缓存中记录编号
-                Integer cacheRecordId = RecordIdMap.get(key);
+                Integer cacheRecordId = EventIdMap.get(key);
                 //如果缓存获取不到，就从数据库中获取最新的
                 if (cacheRecordId==null){
                     //查询数据库(查询该设备最新),将数据库数据放入缓存
@@ -61,7 +61,7 @@ public class ModuleEventDetection implements Runnable{
                         Integer queryRecordId = iotEvent.getD1090();
                         //数据库有数据就放入缓存中
                         if (queryRecordId!=null){
-                            RecordIdMap.put(key,queryRecordId);
+                            EventIdMap.put(key,queryRecordId);
                             //再次读取缓存
                             cacheRecordId=queryRecordId;
                         }
@@ -71,11 +71,11 @@ public class ModuleEventDetection implements Runnable{
                 if (cacheRecordId==null){
                     log.info("经过缓存的数据仍然为空{}",cacheRecordId);
                     //如果没有记录，那么代表设备刚刚激活，默认只查询一条
-                    //1.首先设置设备记录编号(2081)为recorId
-                    String set2081HexStr = CodeUtils.generateModbus(1, 6, 2080, recordId);
-                    byte[] set2081 = CodeUtils.hexStrToByteArr(set2081HexStr);
+                    //1.首先设置设备记录编号(2080)为eventId
+                    String set2080HexStr = CodeUtils.generateModbus(1, 6, 2080, recordId);
+                    byte[] set2080 = CodeUtils.hexStrToByteArr(set2080HexStr);
                     //会返回同指令一样的数据
-                    String result = IOUtils.setDeviceValue(socket, set2081);
+                    String result = IOUtils.setDeviceValue(socket, set2080);
                     log.info("2081返回指令为{}",result);
                     //if (result!=null&&set2081HexStr.equals(result)) log.info("2081返回指令为{}",result);
                     //2.查询1100至1365,分三次查询
@@ -97,7 +97,7 @@ public class ModuleEventDetection implements Runnable{
                     IotEvent iotEvent = SetObjComboFields.setObj(IotEvent.class, ints, "d1100", "d1110");
                     //设置deviceId
                     iotEvent.setDeviceId(key);
-                    //设置1091   (0-65535)
+                    //设置1090   (0-65535)
                     iotEvent.setD1090(recordId);
                     //中间9个为空
                     //后面全为电流波形

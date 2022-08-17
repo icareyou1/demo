@@ -1,7 +1,9 @@
 package com.fentric.service;
 
+import com.fentric.mapper.IotRunMapper;
 import com.fentric.pojo.IotRun;
 import com.baomidou.mybatisplus.extension.service.IService;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * <p>
@@ -12,5 +14,4 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @since 2022-08-05
  */
 public interface IotRunService extends IService<IotRun> {
-
 }

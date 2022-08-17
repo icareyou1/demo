@@ -37,7 +37,7 @@ public class ServerSocketConfig {
         //掉线监测，由定时采集处完成
         //自动采集线程(分模块采集)
         Thread.sleep(3000);  //初始化连接
-        ThreadPool.execute(new ModuleWarmDetection());
+        ThreadPool.execute(new DetectDeviceOnline());
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -46,7 +46,7 @@ public class ServerSocketConfig {
                     if (System.currentTimeMillis()-l>30000){
                         l=System.currentTimeMillis();
 
-                        ThreadPool.execute(new ModuleWarmDetection());
+                        ThreadPool.execute(new DetectDeviceOnline());
                         //System.out.println("异常事件检测模块启动....");
                         //ThreadPool.execute(new ModuleEventDetection());
                     }

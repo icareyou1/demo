@@ -14,5 +14,5 @@ import java.util.List;
  * @since 2022-08-08
  */
 public interface IotDeviceService extends IService<IotDevice> {
-    Long queryDeviceCountByReceiveGateWayId(Long receiveGatewayId);
+    int[] queryDeviceCategoryByReceiveGateWayId(Long receiveGatewayId);
 }
