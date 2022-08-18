@@ -8,6 +8,7 @@ import com.fentric.pojo.IotDevice;
 import com.fentric.service.IotDeviceService;
 import com.fentric.utils.CodeUtils;
 import com.fentric.utils.SpringUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,7 @@ import static com.fentric.modbus.DeviceDataPool.ThreadPool;
 
 
 @Component
+@Slf4j
 public class ServerSocketConfig {
     @Value("${socket.port}")
     private int port;
@@ -32,26 +34,22 @@ public class ServerSocketConfig {
     public void createServerSocket() throws InterruptedException {
         //处理连接线程
         ThreadPool.execute(new ServerReceiveThread(port));
-        //用户输入线程
+        //todo 用户输入线程（暂时放一边）
         ThreadPool.execute(new WatchingOperationMQ());
-        //掉线监测，由定时采集处完成
         //自动采集线程(分模块采集)
         Thread.sleep(3000);  //初始化连接
-        ThreadPool.execute(new DetectDeviceOnline());
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                long l = System.currentTimeMillis();
-                while (true){
-                    if (System.currentTimeMillis()-l>30000){
-                        l=System.currentTimeMillis();
-
-                        ThreadPool.execute(new DetectDeviceOnline());
-                        //System.out.println("异常事件检测模块启动....");
-                        //ThreadPool.execute(new ModuleEventDetection());
-                    }
-                }
+        int count=1;
+        while (true){
+            ThreadPool.execute(new DetectDeviceOnline());
+            log.info("当前活动线程:{}",ThreadPool.getActiveCount());
+            //让线程活动起来
+            Thread.sleep(100);
+            //这里执行完一个再执行
+            while (ThreadPool.getActiveCount()>=3){
             }
-        }).start();
+            log.info("==============第{}个DetectDeviceOnline执行完毕===================================",count);
+            count++;
+            Thread.sleep(30000);
+        }
     }
 }

@@ -4,19 +4,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fentric.domain.Modbus;
 import com.fentric.mapper.IotEventMapper;
 import com.fentric.mapper.IotRunMapper;
-import com.fentric.mapper.IotWarmMapper;
 import com.fentric.pojo.IotEvent;
 import com.fentric.pojo.IotRun;
 import com.fentric.pojo.IotWarm;
-import com.fentric.service.IotEventService;
 import com.fentric.service.IotWarmService;
-import com.fentric.utils.CodeUtils;
 import com.fentric.utils.IOUtils;
 import com.fentric.utils.SetObjComboFields;
 import com.fentric.utils.SpringUtils;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -24,12 +18,12 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.fentric.modbus.DeviceDataPool.*;
+import static com.fentric.modbus.DeviceDataPool.ThreadPool;
 import static com.fentric.modbus.ModuleEventDetection.EventIdMap;
 import static com.fentric.modbus.ModuleWarmDetection.WarmDataMap;
 
 @Slf4j
-public class SPDModule extends FentricModule{
+public class ResistanceModule extends FentricModule{
     private List<StringBuilder> EventDataList=new ArrayList<>();
     //处理告警模块
     @Override
@@ -40,7 +34,6 @@ public class SPDModule extends FentricModule{
         String cacheData = WarmDataMap.get(modbus.getDeviceId());
         log.info("获取告警模块缓存量数据{}",cacheData);
         if (cacheData==null||"".equals(cacheData)){
-
             //查询再IotWarm表中 根据设备号查询d1020to1021字段  ，返回IotWarm
             IotWarmService iotWarmService = SpringUtils.getBean("iotWarmServiceImpl", IotWarmService.class);
             //如果没有查到返回null
@@ -77,18 +70,18 @@ public class SPDModule extends FentricModule{
     //处理运行状态
     @Override
     public void handleRunModule(){
-        //切割出1022和1030-1079两个部分的数据
+        //切割出1022和1030-1035两个部分的数据
         String runData = getRunData();
         String d1022=runData.substring(0,4);
-        String d1030_1079 = runData.substring(32);
-        Integer[] ints_d1030_1079= new Integer[d1030_1079.length() / 4];
-        for (int i=0;i<ints_d1030_1079.length;i++){
+        String d1030_1035 = runData.substring(32,56);
+        Integer[] ints_d1030_1035= new Integer[d1030_1035.length() / 4];
+        for (int i=0;i<ints_d1030_1035.length;i++){
             //全部转换成0-65535之间数字
-            ints_d1030_1079[i]=Integer.parseInt(d1030_1079.substring(i*4, i*4 + 4),16);
+            ints_d1030_1035[i]=Integer.parseInt(d1030_1035.substring(i*4, i*4 + 4),16);
         }
         //遍历封装(报错的话，将只只会封装设备id和1022)
         try {
-            IotRun iotRun = SetObjComboFields.setObj(IotRun.class, ints_d1030_1079, "d1030", "d1079");
+            IotRun iotRun = SetObjComboFields.setObj(IotRun.class, ints_d1030_1035, "d1030", "d1035");
             //设置设备id
             iotRun.setDeviceId(modbus.getDeviceId());
             iotRun.setd1022(d1022);

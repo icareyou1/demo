@@ -15,4 +15,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface IotWarmService extends IService<IotWarm> {
     //将告警模块modbus结果存入表中
     void addWarmModbus(Modbus modbus);
+    //根据设备id查询最新的d1020to1021字段
+    IotWarm queryLatestD1020to1021ByDeviceId(Long deviceId);
 }

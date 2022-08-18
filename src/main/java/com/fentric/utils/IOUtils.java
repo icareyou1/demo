@@ -60,6 +60,7 @@ public class IOUtils {
         } catch (SocketException e) {
             e.printStackTrace();
         } catch (IOException e) {
+            log.info("用数据包和网关通信失败...");
             e.printStackTrace();
         }
         return false;
@@ -174,7 +175,12 @@ public class IOUtils {
                 return modbus;
             } catch (IOException e) {
                 errorMsg.append("第"+(4-sendCount)+"次出错原因:"+"反馈超时");
-                log.info("第{}次出错原因：反馈超时",(4-sendCount));
+                //出现连接失败问题
+                if (e.getMessage().contains("Connection reset")){
+                    log.info("第{}次出错原因：连接失败...",(4-sendCount));
+                }else {
+                    log.info("第{}次出错原因：反馈超时",(4-sendCount));
+                }
                 sendCount--;
                 e.printStackTrace();
             }
@@ -264,7 +270,12 @@ public class IOUtils {
                 return modbus;
             } catch (IOException e) {
                 errorMsg.append("第"+(4-sendCount)+"次出错原因:"+"读取超时");
-                log.info("第{}次出错原因：读取超时",(4-sendCount));
+                //出现连接失败问题
+                if (e.getMessage().contains("Connection reset")){
+                    log.info("第{}次出错原因：连接失败...",(4-sendCount));
+                }else {
+                    log.info("第{}次出错原因：反馈超时",(4-sendCount));
+                }
                 sendCount--;
                 e.printStackTrace();
             }
@@ -352,7 +363,12 @@ public class IOUtils {
                 return modbus;
             } catch (IOException e) {
                 errorMsg.append("第"+(4-sendCount)+"次出错原因:"+"读取超时");
-                log.info("第{}次出错原因：读取超时",(4-sendCount));
+                //出现连接失败问题
+                if (e.getMessage().contains("Connection reset")){
+                    log.info("第{}次出错原因：连接失败...",(4-sendCount));
+                }else {
+                    log.info("第{}次出错原因：反馈超时",(4-sendCount));
+                }
                 sendCount--;
                 e.printStackTrace();
             }
