@@ -36,6 +36,7 @@ public class ServerSocketConfig {
         ThreadPool.execute(new ServerReceiveThread(port));
         //todo 用户输入线程（暂时放一边）
         ThreadPool.execute(new WatchingOperationMQ());
+       /*
         //自动采集线程(分模块采集)
         Thread.sleep(3000);  //初始化连接
         int count=1;
@@ -51,5 +52,6 @@ public class ServerSocketConfig {
             count++;
             Thread.sleep(30000);
         }
+        */
     }
 }

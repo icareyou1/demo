@@ -8,6 +8,8 @@ import org.springframework.boot.web.servlet.error.DefaultErrorAttributes;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.context.request.ServletWebRequest;
+import org.springframework.web.context.request.WebRequest;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -26,7 +28,11 @@ public class WhitePageAndJsonErrorController extends AbstractErrorController {
     @RequestMapping
     @ResponseBody
     public ResponseResult error(HttpServletRequest request) {
-        return new ResponseResult(404,"请求地址"+request.getRequestURI()+"不存在");
+        //根据源码追出来的
+        WebRequest webRequest = new ServletWebRequest(request);
+        String requestPath=(String)webRequest.getAttribute("javax.servlet.error.request_uri",0);
+        //request.getRequestURI()获取的为/error
+        return new ResponseResult(404,"请求地址"+requestPath+"不存在");
     }
 
 }

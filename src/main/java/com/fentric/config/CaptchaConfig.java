@@ -9,7 +9,8 @@ import org.springframework.context.annotation.Configuration;
 
 import java.awt.*;
 
-@Configuration
+//@Configuration
+//容器注入生成重复代码,源代码jar缺陷,作者跑路了
 public class CaptchaConfig {
     @Bean
     public ArithmeticCaptcha captcha(){

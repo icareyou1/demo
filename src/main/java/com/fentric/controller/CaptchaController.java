@@ -3,6 +3,7 @@ package com.fentric.controller;
 import com.fentric.domain.ResponseResult;
 import com.fentric.utils.JwtUtils;
 import com.fentric.utils.RedisCache;
+import com.fentric.utils.WebUtils;
 import com.google.code.kaptcha.Producer;
 import com.wf.captcha.ArithmeticCaptcha;
 import com.wf.captcha.base.Captcha;
@@ -19,8 +20,6 @@ import java.util.concurrent.TimeUnit;
 @RestController
 public class CaptchaController {
     @Autowired
-    private Captcha captcha;
-    @Autowired
     private RedisCache redisCache;
 
     /**
@@ -28,8 +27,9 @@ public class CaptchaController {
      */
     @GetMapping("/captchaImage")
     public ResponseResult createCode(HttpServletResponse response){
+        //如果使用容器注入,生成重复代码
         //生成计算结果
-        ArithmeticCaptcha captcha = (ArithmeticCaptcha) this.captcha;
+        ArithmeticCaptcha captcha = WebUtils.captcha();
         String code = captcha.text();
         //生成表达式
         String arithmeticString = captcha.getArithmeticString();

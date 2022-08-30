@@ -3,6 +3,7 @@ package com.fentric.handler;
 import com.fentric.domain.ResponseResult;
 import com.fentric.exception.CaptchaException;
 import com.fentric.exception.TokenException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -16,7 +17,10 @@ public class GlobalExceptionHandler {
     //可以处理captcha等异常,不能处理jwt等过滤器异常,因为先被ExceptionTranslationFilter处理了
     @ExceptionHandler(RuntimeException.class)
     public ResponseResult handleCaptchaException(RuntimeException runtimeException){
-
+        //如果是未授权异常,抛出交给AccessDeniedHandlerImpl来处理
+        if (runtimeException instanceof AccessDeniedException){
+            throw runtimeException;
+        }
         String message = runtimeException.getMessage();
         return new ResponseResult(500,message);
     }

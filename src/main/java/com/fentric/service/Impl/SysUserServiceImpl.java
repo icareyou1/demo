@@ -55,12 +55,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         } catch (AuthenticationException e) {
             //认证没有通过,会有异常拦截器进行处理
             if (e instanceof BadCredentialsException){
-                //return new ResponseResult(500,"用户名或密码错误");
                 //done 用户名或密码不正确
                 throw new UsernamePasswordMissMatchException();
             }else{
                 //done 认证处理中的其他异常
-                throw new UsernamePasswordException("用户名和密码匹配中的其他异常");
+                throw new UsernamePasswordException("用户名和密码匹配中的其他异常,例如数据库查询异常");
             }
         }
         //认证通过,使用userid生成token返回给前端

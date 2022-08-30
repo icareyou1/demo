@@ -26,7 +26,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * 新用法无需继承,直接定义配置类,注入
  */
 @Configuration
-//开启认证
+//开启授权访问注解
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
     //spring security 配置类

@@ -2,6 +2,7 @@ package com.fentric.service.Impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.fentric.exception.UsernamePasswordMissMatchException;
 import com.fentric.mapper.SysMenuMapper;
 import com.fentric.mapper.SysUserMapper;
 import com.fentric.pojo.LoginUser;
@@ -22,7 +23,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Autowired
     private SysMenuMapper sysMenuMapper;
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String username){
         /**
          * 查询用户信息
          */
@@ -31,13 +32,14 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         SysUser sysUser = sysUserMapper.selectOne(sysUserWrapper);
         //如果没有查询到用户就抛出异常
         if (Objects.isNull(sysUser)){
-            //done 数据库用户名密码错误
-            throw new RuntimeException("用户名或者密码错误");
+            //done 数据库用户名密码错误   (交给DaoAuthenticationProvider来捕获异常,最好为下面的异常)
+            //done 最后在AbstractUserDetailsAuthenticationProvider 变成BadCredentialsException异常
+            throw new UsernameNotFoundException("用户名不存在");
         }
         //查询对应权限信息
         //将查询到的数据进行封装
         QueryWrapper sysMenuWrapper = new QueryWrapper<>();
-        sysMenuWrapper.eq("user_id",sysUser.getUserId());
+        sysMenuWrapper.eq("role_id",sysUser.getRoleId());
         Set<String> permissions= sysMenuMapper.selectPermsByUserId(sysMenuWrapper);
         return new LoginUser(sysUser,permissions);
     }

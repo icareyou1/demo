@@ -18,6 +18,7 @@ import static com.fentric.modbus.DeviceDataPool.UserCodeMQ;
 
 @Service
 public class DeviceServiceImpl implements DeviceService {
+    //测试代码,用户主动发送消息
     @Override
     public ResponseResult sendModbus() {
         UserCode userCode = new UserCode();

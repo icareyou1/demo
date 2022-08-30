@@ -110,9 +110,7 @@ class DemoApplicationTests {
     }
     @Test
     public void test1(){
-        BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
-        System.out.println(bCryptPasswordEncoder.encode("4455"));
-
+        System.out.println(JwtUtils.parseToken("eyJhbGciOiJIUzI1NiJ9.eyJsb2dpblVzZXJfa2V5IjoiMTAwMTAiLCJleHAiOjE2NjQxOTE4Njh9.vPiz-fHomII3NRiu6rhvWN0GqyHK4WiKzEwhk6D56d8"));
     }
 
 }
