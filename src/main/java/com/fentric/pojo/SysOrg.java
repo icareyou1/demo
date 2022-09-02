@@ -8,35 +8,55 @@ import java.time.LocalDateTime;
 
 /**
  * <p>
- * 角色表(与用户表1对1)
+ * 组织部门表(与用户表1对1)
  * </p>
  *
  * @author zhouqi
  * @since 2022-09-01
  */
-@TableName("sys_role")
-public class SysRole implements Serializable {
+@TableName("sys_org")
+public class SysOrg implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     /**
-     * 角色id
+     * 组织id
      */
-    @TableId(value = "role_id", type = IdType.AUTO)
-    private Long roleId;
+    @TableId(value = "org_id", type = IdType.AUTO)
+    private Long orgId;
 
     /**
-     * 角色名称
+     * 上级组织id
      */
-    private String roleName;
+    private Long parentId;
 
     /**
-     * 角色状态(0正常,1禁用)
+     * 组织名字
+     */
+    private String orgName;
+
+    /**
+     * 负责人
+     */
+    private String leader;
+
+    /**
+     * 组织电话号码
+     */
+    private String phoneNumber;
+
+    /**
+     * 组织邮箱
+     */
+    private String email;
+
+    /**
+     * 组织状态(0正常,1禁用)
      */
     private String status;
 
     /**
-     * 角色是否删除(0存在,1删除)
+     * 组织信息是否删除(0存在,1删除)
      */
     private String deleted;
 
@@ -45,30 +65,56 @@ public class SysRole implements Serializable {
      */
     private String comment;
 
-    /**
-     * 创建时间
-     */
     private LocalDateTime createTime;
 
-    /**
-     * 更新时间
-     */
     private LocalDateTime updateTime;
 
-    public Long getRoleId() {
-        return roleId;
+    public Long getOrgId() {
+        return orgId;
     }
 
-    public void setRoleId(Long roleId) {
-        this.roleId = roleId;
+    public void setOrgId(Long orgId) {
+        this.orgId = orgId;
     }
 
-    public String getRoleName() {
-        return roleName;
+    public Long getParentId() {
+        return parentId;
     }
 
-    public void setRoleName(String roleName) {
-        this.roleName = roleName;
+    public void setParentId(Long parentId) {
+        this.parentId = parentId;
+    }
+
+    public String getOrgName() {
+        return orgName;
+    }
+
+    public void setOrgName(String orgName) {
+        this.orgName = orgName;
+    }
+
+    public String getLeader() {
+        return leader;
+    }
+
+    public void setLeader(String leader) {
+        this.leader = leader;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getStatus() {
@@ -113,9 +159,13 @@ public class SysRole implements Serializable {
 
     @Override
     public String toString() {
-        return "SysRole{" +
-        "roleId = " + roleId +
-        ", roleName = " + roleName +
+        return "SysOrg{" +
+        "orgId = " + orgId +
+        ", parentId = " + parentId +
+        ", orgName = " + orgName +
+        ", leader = " + leader +
+        ", phoneNumber = " + phoneNumber +
+        ", email = " + email +
         ", status = " + status +
         ", deleted = " + deleted +
         ", comment = " + comment +

@@ -15,4 +15,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface SysUserService extends IService<SysUser> {
     ResponseResult login(SysUser sysUser,String code,String uuid);
     ResponseResult logout();
+    ResponseResult getUserInfo();
 }

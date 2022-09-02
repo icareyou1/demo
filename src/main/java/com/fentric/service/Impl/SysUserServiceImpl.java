@@ -1,6 +1,7 @@
 package com.fentric.service.Impl;
 
 import com.fentric.domain.ResponseResult;
+import com.fentric.domain.vo.PageUser;
 import com.fentric.exception.UsernamePasswordException;
 import com.fentric.exception.UsernamePasswordMissMatchException;
 import com.fentric.exception.CaptchaExpireException;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -43,6 +45,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     private RedisCache redisCache;
     @Value("${redis.expireTime}")
     private int expireTime;
+    @Autowired
+    private SysUserMapper sysUserMapper;
 
     @Override
     public ResponseResult login(SysUser sysUser,String code,String uuid) {
@@ -104,6 +108,25 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         String redisKey="login:"+userId;
         redisCache.deleteObject(redisKey);
         return new ResponseResult(200,"注销成功");
+    }
+
+    @Override
+    public ResponseResult getUserInfo() {
+        LoginUser loginUser = (LoginUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        //用户id
+        Long userId = loginUser.getSysUser().getUserId();
+        //获取pageUser
+        PageUser pageUser = sysUserMapper.selectPageUserByUserId(userId);
+        //获取角色
+        String roleName = pageUser.getSysRole().getRoleName();
+        //获取权限
+        Set<String> permissions = loginUser.getPermissions();
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("pageUser",pageUser);
+        map.put("roleName",roleName);
+        map.put("permissions",permissions);
+        return new ResponseResult(200,"操作成功",map);
     }
 
     /**
