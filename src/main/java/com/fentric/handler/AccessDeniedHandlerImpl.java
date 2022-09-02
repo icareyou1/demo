@@ -26,11 +26,12 @@ public class AccessDeniedHandlerImpl implements AccessDeniedHandler {
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
         ResponseResult responseResult;
+        //未授权也使用401
         if ("/sysUser/login".equals(request.getRequestURI())){
-            responseResult = new ResponseResult(403, "已登录用户禁止访问:/sysUser/login");
+            responseResult = new ResponseResult(401, "已登录用户禁止访问:/sysUser/login");
         }else {
             //未授权403
-            responseResult = new ResponseResult(403, "用户没有访问"+request.getRequestURI()+"权限");
+            responseResult = new ResponseResult(401, "用户没有访问"+request.getRequestURI()+"权限");
         }
         String json = JSON.toJSONString(responseResult);
         WebUtils.renderString(response,json);

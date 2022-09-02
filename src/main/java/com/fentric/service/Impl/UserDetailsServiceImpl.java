@@ -40,6 +40,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         //将查询到的数据进行封装
         QueryWrapper sysMenuWrapper = new QueryWrapper<>();
         sysMenuWrapper.eq("role_id",sysUser.getRoleId());
+        //排除空权限
+        sysMenuWrapper.isNotNull("perms");
         Set<String> permissions= sysMenuMapper.selectPermsByUserId(sysMenuWrapper);
         return new LoginUser(sysUser,permissions);
     }
