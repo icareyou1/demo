@@ -1,8 +1,11 @@
 package com.fentric.utils;
 
+import com.fentric.pojo.LoginUser;
+import com.fentric.pojo.SysUser;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -34,4 +37,12 @@ public class SpringUtils implements ApplicationContextAware {
         return getApplicationContext().getBean(name, clazz);
     }
 
+    //获取loginUser
+    public static LoginUser getLoginUser(){
+        return (LoginUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    }
+    //获取SysUser
+    public static SysUser getSysUser(){
+        return getLoginUser().getSysUser();
+    }
 }

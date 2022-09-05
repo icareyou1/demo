@@ -1,8 +1,10 @@
 package com.fentric;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fentric.domain.vo.PageUser;
 import com.fentric.mapper.SysMenuMapper;
 import com.fentric.mapper.SysUserMapper;
+import com.fentric.pojo.SysMenu;
 import com.fentric.pojo.SysRole;
 import com.fentric.pojo.SysUser;
 import org.junit.jupiter.api.Test;
@@ -10,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.lang.reflect.Field;
+import java.util.List;
 
 @SpringBootTest
 class DemoApplicationTests {
@@ -21,8 +24,8 @@ class DemoApplicationTests {
     SysMenuMapper sysMenuMapper;
     @Test
     void sqlGenerator(){
-        Class aClass = SysRole.class;
-        String prefix="r.";
+        Class aClass = SysMenu.class;
+        String prefix="";
 
         StringBuilder sb = new StringBuilder();
         for (Field field : aClass.getDeclaredFields()) {
@@ -42,8 +45,11 @@ class DemoApplicationTests {
 
     @Test
     void contextLoads() {
-        PageUser pageUser = sysUserMapper.selectPageUserByUserId(10010L);
-        System.out.println(pageUser);
+        List<SysMenu> sysMenus = sysMenuMapper.selectMenuAll();
+        for (SysMenu sysMenu : sysMenus) {
+            System.out.println(sysMenu);
+            System.out.println("0".equals(sysMenu.getStatus())? false : true);
+        }
     }
 
 }

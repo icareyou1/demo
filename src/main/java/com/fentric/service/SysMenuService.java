@@ -1,7 +1,10 @@
 package com.fentric.service;
 
-import com.fentric.pojo.SysMenu;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.fentric.domain.vo.RouterMenu;
+import com.fentric.pojo.SysMenu;
+
+import java.util.List;
 
 /**
  * <p>
@@ -12,5 +15,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @since 2022-07-22
  */
 public interface SysMenuService extends IService<SysMenu> {
-
+    List<RouterMenu> selectMenuByUserId(Long userId);
 }

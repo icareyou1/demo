@@ -42,7 +42,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         sysMenuWrapper.eq("role_id",sysUser.getRoleId());
         //排除空权限
         sysMenuWrapper.isNotNull("perms");
-        Set<String> permissions= sysMenuMapper.selectPermsByUserId(sysMenuWrapper);
+        Set<String> permissions= sysMenuMapper.selectPermsByRoleId(sysMenuWrapper);
         return new LoginUser(sysUser,permissions);
     }
 }
