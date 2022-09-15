@@ -1,4 +1,4 @@
-package com.fentric.service.Impl;
+package com.fentric.service.impl;
 
 import com.fentric.domain.ResponseResult;
 import com.fentric.domain.vo.PageUser;
