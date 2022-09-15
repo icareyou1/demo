@@ -15,6 +15,7 @@
         <result property="createTime" column="create_time"></result>
         <result property="updateTime" column="update_time"></result>
     </resultMap>
+    <!--除了超级管理员查询权限-->
     <select id="selectPermsByRoleId" resultType="java.lang.String">
         SELECT DISTINCT perms
         FROM
@@ -22,13 +23,15 @@
                 LEFT JOIN sys_menu m ON rm.`menu_id`=m.`menu_id`
         ${ew.customSqlSegment}
     </select>
+
     <!--管理员的查询所有菜单-->
+    <!--length(m.menu_id)<=3-->
     <select id="selectMenuAll" resultMap="EncapsulateSysMenu">
         SELECT m.menu_id,m.parent_id,m.menu_name,m.path,m.component,IFNULL(m.perms,"") AS perms,m.icon,m.STATUS,m.deleted,m.COMMENT,m.create_time,m.update_time
         FROM sys_menu m
         where
                 <![CDATA[
-                    length(m.menu_id)<=3
+                    m.deleted=0 and m.status=0
                 ]]>
     </select>
     <!--根据roleId查询-->
@@ -38,7 +41,7 @@
                 LEFT JOIN sys_role_menu rm ON m.`menu_id`=rm.`menu_id`
         where
                 <![CDATA[
-                  role_id=#{roleId} AND length(m.menu_id)<=3
+                  role_id=#{roleId} AND m.deleted=0 and m.status=0 and rm.deleted=0 and rm.status=0
                 ]]>
     </select>
 </mapper>
