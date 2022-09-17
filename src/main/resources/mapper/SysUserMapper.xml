@@ -45,8 +45,8 @@
                  LEFT JOIN sys_org o ON u.org_id=o.org_id
                  LEFT JOIN sys_role r ON u.role_id=r.role_id
         WHERE user_id=#{userId} and u.deleted=0 and u.status=0
-          and o.deleted=0 and o.status=0
-          and r.deleted=0 and r.status=0
+--           and o.deleted=0 and o.status=0
+--           and r.deleted=0 and r.status=0
     </select>
     <!--${ew.customSqlSegment}-->
 </mapper>

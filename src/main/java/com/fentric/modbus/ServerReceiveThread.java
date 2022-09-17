@@ -50,17 +50,19 @@ public class ServerReceiveThread implements Runnable{
                 //查询数据库（不考虑放入缓存，新设备注册事件少）
                 //确定是否注册，及注册了几个设备
                 IotDeviceService iotDeviceServiceImpl = SpringUtils.getBean("iotDeviceServiceImpl", IotDeviceService.class);
+                //查询网关id下,0-32下所有设备类型
                 int[] category = iotDeviceServiceImpl.queryDeviceCategoryByReceiveGateWayId(receiveGatewayId);
                 log.info("数据库中查询的设备类型为:{}",Arrays.toString(category));
                 int iotDeviceCount=0;
                 if (category!=null) iotDeviceCount=category.length;
-                //能从数据库中查询到
+                //能从数据库中查询到(至少一个说明有设备注入)
                 if (iotDeviceCount>=1){
                     DeviceStatus deviceStatus = new DeviceStatus();
                     deviceStatus.setGateWayId(receiveGatewayId);
                     deviceStatus.setSocket(accept);
                     //done 查询状态表状态进行封装
                     IotOnlineService iotOnlineServiceImpl = SpringUtils.getBean("iotOnlineServiceImpl", IotOnlineService.class);
+                    //将查询到设备id和在线情况封装进数组  可能会有0值存在,刚刚接入
                     int[] online = iotOnlineServiceImpl.putDevicesStatusIntoIntArray(receiveGatewayId);
                     log.info("从数据库中查询设备的状态为:{}", Arrays.toString(online));
                     //设置设备类型

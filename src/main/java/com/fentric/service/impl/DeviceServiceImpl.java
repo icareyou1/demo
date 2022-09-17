@@ -1,12 +1,10 @@
-package com.fentric.service.Impl;
+package com.fentric.service.impl;
 
-import com.fentric.config.ServerSocketConfig;
 import com.fentric.domain.Modbus;
 import com.fentric.domain.ResponseResult;
 import com.fentric.domain.UserCode;
 import com.fentric.pojo.LoginUser;
 import com.fentric.service.DeviceService;
-import com.fentric.utils.CodeUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 

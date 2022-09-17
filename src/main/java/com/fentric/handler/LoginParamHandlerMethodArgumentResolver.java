@@ -33,6 +33,7 @@ public class LoginParamHandlerMethodArgumentResolver implements HandlerMethodArg
         Object attribute = request.getAttribute(annotationValue);
         if (attribute==null){
             request= wrapRequest(request);
+            attribute=request.getAttribute(annotationValue);
         }
         //当注解值为sysUser时,封装userName和password
         if ("sysUser".equals(annotationValue)){
@@ -40,6 +41,9 @@ public class LoginParamHandlerMethodArgumentResolver implements HandlerMethodArg
             sysUser.setUserName((String) request.getAttribute("userName"));
             sysUser.setPassword((String) request.getAttribute("password"));
             return sysUser;
+        }
+        if (attribute==null){
+            throw  new RuntimeException("参数解析异常");
         }
         return attribute;
     }

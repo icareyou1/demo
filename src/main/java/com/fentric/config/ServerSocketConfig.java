@@ -36,7 +36,41 @@ public class ServerSocketConfig {
         ThreadPool.execute(new ServerReceiveThread(port));
         //todo 用户输入线程（暂时放一边）
         ThreadPool.execute(new WatchingOperationMQ());
-       /*
+
+        //数据采集
+        /*ThreadPool.execute(new Runnable() {
+            @Override
+            public void run() {
+                //自动采集线程(分模块采集)
+                try {
+                    Thread.sleep(3000);  //初始化连接
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                int count=1;
+                while (true){
+                    ThreadPool.execute(new DetectDeviceOnline());
+                    log.info("当前活动线程:{}",ThreadPool.getActiveCount());
+                    //让线程活动起来
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    //这里执行完一个再执行
+                    while (ThreadPool.getActiveCount()>=4){
+                    }
+                    log.info("==============第{}个DetectDeviceOnline执行完毕===================================",count);
+                    count++;
+                    try {
+                        Thread.sleep(30000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });*/
+/*
         //自动采集线程(分模块采集)
         Thread.sleep(3000);  //初始化连接
         int count=1;
@@ -52,6 +86,7 @@ public class ServerSocketConfig {
             count++;
             Thread.sleep(30000);
         }
-        */
+*/
+
     }
 }

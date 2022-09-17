@@ -5,8 +5,9 @@ import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fentric.domain.ResponseResult;
-import com.fentric.domain.requestVO.RoleAddParams;
+import com.fentric.domain.requestVO.RoleAddOrUpdateParams;
 import com.fentric.domain.requestVO.RoleQueryParams;
+import com.fentric.domain.vo.SelectRole;
 import com.fentric.pojo.SysRole;
 import com.fentric.mapper.SysRoleMapper;
 import com.fentric.service.SysRoleService;
@@ -18,6 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -38,7 +40,6 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         //设置查询参数
         LambdaQueryWrapper<SysRole> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(SysRole::getDeleted,"0");
-        //停不停用都要查询
 
         //1.对params进行非空判断     如果乱传json数据,会捕获500异常   "msg": "illegal input， offset 1, char 1"
         if (roleQueryParams.getParams()!=null&&!"".equals(roleQueryParams.getParams())){
@@ -114,40 +115,62 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         //先解析数组
         List<Long> list=new ArrayList<>();
         Arrays.stream(roleIds.split(",")).forEach((item->{
-            list.add(Long.parseLong(item));
+            long roleId = Long.parseLong(item);
+            list.add(roleId);
         }));
-
+        for (Long roleId : list) {
+            if (roleId<=0){
+                return new ResponseResult(500,"删除角色,参数不合法");
+            }
+        }
         for (Long roleId : list) {
             sysRoleMapper.deleteRoleByRoleId(roleId);
             //删除用户后,对应的权限就不处理了
         }
-
-        return null;
+        return new ResponseResult(200,"删除角色成功");
     }
 
     //接收JSON字符串先进行处理
     @Override
-    public Long addRole(RoleAddParams roleAddParams) {
+    public Long addRole(RoleAddOrUpdateParams roleAddOrUpdateParams) {
         /**
          * 接收的参数为: roleName  status menuIds orgIds(不用处理,前端初始化出现)  menuCheckStrictly(可以不做处理)  comment
          */
         //存入role前先检查名字,不允许同名角色
         LambdaQueryWrapper<SysRole> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(SysRole::getDeleted,"0");
-        queryWrapper.eq(SysRole::getRoleName,roleAddParams.getRoleName());
-        //没有查询到返回null
+        queryWrapper.eq(SysRole::getRoleName,roleAddOrUpdateParams.getRoleName());
+        //没有查询到,返回null
         SysRole isExist = sysRoleMapper.selectOne(queryWrapper);
+        //如果不等于null,说明有角色存在
         if (isExist!=null){
             return -1L;
         }
         //新建一个role对象,封装数据(如何返回roleId)
         SysRole sysRole = new SysRole();
-        sysRole.setRoleId(roleAddParams.getRoleId());
-        sysRole.setRoleName(roleAddParams.getRoleName());
-        sysRole.setStatus(roleAddParams.getStatus());
-        sysRole.setComment(roleAddParams.getComment());
+        sysRole.setRoleId(roleAddOrUpdateParams.getRoleId());
+        sysRole.setRoleName(roleAddOrUpdateParams.getRoleName());
+        sysRole.setStatus(roleAddOrUpdateParams.getStatus());
+        sysRole.setComment(roleAddOrUpdateParams.getComment());
         sysRoleMapper.insert(sysRole);
         //新增成功后,返回roleId
         return sysRole.getRoleId();
     }
+
+    //查询出角色信息
+    @Override
+    public List<SelectRole> getRolesForAddUser() {
+        LambdaQueryWrapper<SysRole> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(SysRole::getDeleted,"0");
+        //筛选出停用的角色
+        queryWrapper.eq(SysRole::getStatus,"0");
+        List<SelectRole> list = this.list(queryWrapper).stream().map(item -> {
+            SelectRole selectRole = new SelectRole();
+            selectRole.setRoleId(item.getRoleId());
+            selectRole.setRoleName(item.getRoleName());
+            return selectRole;
+        }).collect(Collectors.toList());
+        return list;
+    }
+
 }

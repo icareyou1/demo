@@ -2,6 +2,7 @@ package com.fentric.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fentric.domain.ResponseResult;
+import com.fentric.domain.vo.TreeSelectOrg;
 import com.fentric.mapper.SysUserMapper;
 import com.fentric.pojo.SysOrg;
 import com.fentric.mapper.SysOrgMapper;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -160,5 +163,31 @@ public class SysOrgServiceImpl extends ServiceImpl<SysOrgMapper, SysOrg> impleme
                 return new ResponseResult(200,"根据id筛选自身及子类成功",sysOrgs);
             }
         }
+    }
+    //查询树形组织列表  (data,label,children)
+    @Override
+    public ResponseResult orgTreeSelect() {
+        LambdaQueryWrapper<SysOrg> queryWrapper = new LambdaQueryWrapper<>();
+        //其他地方使用的时候,就要查询启用状态
+        queryWrapper.eq(SysOrg::getDeleted,"0")
+                        .eq(SysOrg::getStatus,"0");
+        List<SysOrg> sysOrgs = sysOrgMapper.selectList(queryWrapper);
+        //开始进行树化
+        return new ResponseResult(200,"查询树形组织列表成功",streamToTree(sysOrgs, 0L));
+    }
+    //利用递归解决
+    private List<TreeSelectOrg> streamToTree(List<SysOrg> treeList, Long parentId){
+        return treeList.stream()
+                //返回符合条件的
+                .filter(item->{
+                    return Objects.equals(item.getParentId(),parentId);
+                }).map(item->{
+                    TreeSelectOrg treeSelectOrg = new TreeSelectOrg();
+                    treeSelectOrg.setOrgId(item.getOrgId());
+                    treeSelectOrg.setOrgName(item.getOrgName());
+                    treeSelectOrg.setParentId(item.getParentId());
+                    treeSelectOrg.setChildren(streamToTree(treeList,item.getOrgId()));
+                    return treeSelectOrg;
+                }).collect(Collectors.toList());
     }
 }

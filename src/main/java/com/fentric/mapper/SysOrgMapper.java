@@ -2,6 +2,7 @@ package com.fentric.mapper;
 
 import com.fentric.pojo.SysOrg;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * <p>
@@ -12,5 +13,5 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * @since 2022-09-01
  */
 public interface SysOrgMapper extends BaseMapper<SysOrg> {
-
+    void deleteOrgByOrgId(@Param("orgId") Long orgId);
 }

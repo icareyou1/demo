@@ -41,4 +41,11 @@ public class IotWarmServiceImpl extends ServiceImpl<IotWarmMapper, IotWarm> impl
         wrapper.orderByDesc(IotWarm::getCreateTime).last("limit 1");
         return iotWarmMapper.selectOne(wrapper);
     }
+
+    //查询今日告警数据
+    /*public Integer queryTotalWarmCount(){
+        LambdaQueryWrapper<IotWarm> queryWrapper = new LambdaQueryWrapper<>();
+        //queryWrapper.
+        iotWarmMapper.se
+    }*/
 }

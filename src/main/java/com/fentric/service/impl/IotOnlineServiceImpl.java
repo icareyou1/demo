@@ -21,8 +21,15 @@ import java.util.List;
 public class IotOnlineServiceImpl extends ServiceImpl<IotOnlineMapper, IotOnline> implements IotOnlineService {
     @Autowired
     public IotOnlineMapper iotOnlineMapper;
+
+    /**
+     * 网关设备再次接入系统时,查询其下设备的在线情况
+     * @param gatewayId
+     * @return
+     */
     @Override
     public int[] putDevicesStatusIntoIntArray(Long gatewayId) {
+        //1在线,2离线     device_id,lost     device_id从0-32,lost可能为null
         List<IotOnline> iotOnlines = iotOnlineMapper.queryGatewayAndDevicesStatusByGatewayId(gatewayId);
         //list不会为null，至少为1才会进入此
         int[] temp=new int[iotOnlines.size()];
