@@ -177,6 +177,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             //至少一个本身所以不用判空
             queryWrapper.in(SysUser::getOrgId,orgIds);
         }
+
         if (userQueryParams.getBeginTime()!=null&&!"".equals(userQueryParams.getBeginTime())){
             queryWrapper.ge(SysUser::getCreateTime, LocalDateTime.of(LocalDate.parse(userQueryParams.getBeginTime()), LocalTime.MIN));
         }
