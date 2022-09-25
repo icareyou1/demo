@@ -2,8 +2,11 @@ package com.fentric.service;
 
 import com.fentric.domain.ResponseResult;
 import com.fentric.domain.requestVO.TagQueryParams;
+import com.fentric.domain.vo.TagShow;
 import com.fentric.pojo.IotTag;
 import com.baomidou.mybatisplus.extension.service.IService;
+
+import java.util.List;
 
 /**
  * <p>
@@ -20,4 +23,6 @@ public interface IotTagService extends IService<IotTag> {
     boolean validateAddTag(IotTag iotTag);
     //修改标签参数是否合法
     boolean validateUpdateTag(IotTag iotTag);
+    //获取设备管理左侧标签栏
+    List<TagShow> getTagForTree();
 }

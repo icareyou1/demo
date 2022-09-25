@@ -166,15 +166,12 @@ public class SysUserController {
             sysUser.setUserId(userId);
             list.add(sysUser);
         }));
-        if (!isValid.get()){
+        if (!isValid.get()||list.size()<=0){
             return new ResponseResult(500,"删除用户,参数不合法");
         }
-        //删除用户,将deleted置为1
-        if (sysUserService.updateBatchById(list)){
-            return new ResponseResult(200,"删除用户成功");
-        }else {
-            return new ResponseResult(500,"删除用户失败");
-        }
+        //删除用户,将deleted置为1    只有在list没有数据时才会报错
+        sysUserService.updateBatchById(list);
+        return new ResponseResult(200,"删除用户成功");
     }
     //修改用户密码
     @PutMapping("/resetUserPassword")

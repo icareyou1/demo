@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fentric.domain.ResponseResult;
 import com.fentric.domain.requestVO.TagQueryParams;
 import com.fentric.domain.vo.PageUser;
+import com.fentric.domain.vo.TagShow;
 import com.fentric.pojo.IotTag;
 import com.fentric.mapper.IotTagMapper;
 import com.fentric.pojo.SysOrg;
@@ -51,11 +52,15 @@ public class IotTagServiceImpl extends ServiceImpl<IotTagMapper, IotTag> impleme
         if (tagQueryParams.getStatus()!=null&&!"".equals(tagQueryParams.getStatus())){
             queryWrapper.eq(IotTag::getStatus,tagQueryParams.getStatus());
         }
-        if (tagQueryParams.getBeginTime()!=null&&!"".equals(tagQueryParams.getBeginTime())){
-            queryWrapper.ge(IotTag::getCreateTime, LocalDateTime.of(LocalDate.parse(tagQueryParams.getBeginTime()), LocalTime.MIN));
-        }
-        if (tagQueryParams.getEndTime()!=null&&!"".equals(tagQueryParams.getEndTime())){
-            queryWrapper.le(IotTag::getCreateTime,LocalDateTime.of(LocalDate.parse(tagQueryParams.getEndTime()),LocalTime.MAX));
+        try {
+            if (tagQueryParams.getBeginTime()!=null&&!"".equals(tagQueryParams.getBeginTime())){
+                queryWrapper.ge(IotTag::getCreateTime, LocalDateTime.of(LocalDate.parse(tagQueryParams.getBeginTime()), LocalTime.MIN));
+            }
+            if (tagQueryParams.getEndTime()!=null&&!"".equals(tagQueryParams.getEndTime())){
+                queryWrapper.le(IotTag::getCreateTime,LocalDateTime.of(LocalDate.parse(tagQueryParams.getEndTime()),LocalTime.MAX));
+            }
+        } catch (Exception e) {
+            return new ResponseResult(500,"日期格式出错");
         }
         //设置Page
         if (tagQueryParams.getPageNum()==null||tagQueryParams.getPageNum()<=0){
@@ -124,4 +129,24 @@ public class IotTagServiceImpl extends ServiceImpl<IotTagMapper, IotTag> impleme
         //comment随意
         return true;
     }
+
+    //获取设备管理页面左侧标签栏
+    @Override
+    public List<TagShow> getTagForTree() {
+        //返回tagId和tagName的列表即可
+        LambdaQueryWrapper<IotTag> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(IotTag::getDeleted,"0");
+        queryWrapper.eq(IotTag::getStatus,"0");
+        //查询非空的tagName
+        queryWrapper.isNotNull(IotTag::getTagName);
+        queryWrapper.select(IotTag::getTagId,IotTag::getTagName);
+        List<IotTag> list = this.list(queryWrapper);
+        List<TagShow> tagShows = new ArrayList<>();
+        list.forEach(item->{
+            TagShow tagShow = new TagShow(item.getTagId(), item.getTagName());
+            tagShows.add(tagShow);
+        });
+        return tagShows;
+    }
+
 }

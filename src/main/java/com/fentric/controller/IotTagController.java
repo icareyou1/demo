@@ -92,6 +92,9 @@ public class IotTagController {
     @PutMapping("/updateTag")
     @PreAuthorize("@fentric.hasAuthority('device:tag:update')")
     public ResponseResult updateTag(@RequestBody IotTag iotTag){
+        iotTag.setDeleted(null);
+        iotTag.setCreateTime(null);
+        iotTag.setUpdateTime(null);
         //修改标签参数是否合法
         if ((!iotTagService.validateUpdateTag(iotTag))){
             return new ResponseResult(500,"修改标签,参数非法");

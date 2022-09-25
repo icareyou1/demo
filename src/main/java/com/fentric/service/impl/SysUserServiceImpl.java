@@ -168,21 +168,24 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             LambdaQueryWrapper<SysOrg> wrapper = new LambdaQueryWrapper<>();
             //部门删除前,其下不能有用户   筛选部门的状态没有意义
             wrapper.eq(SysOrg::getDeleted,"0");
+            //返回不会为空
             List<SysOrg> sysOrgs = sysOrgMapper.selectList(wrapper);
             //筛选当前orgId及其子组织
             List<Long> orgIds = streamTreeOrgIds(sysOrgs, userQueryParams.getOrgId());
             //将本身加入
             orgIds.add(userQueryParams.getOrgId());
-            System.out.println("--"+orgIds);
             //至少一个本身所以不用判空
             queryWrapper.in(SysUser::getOrgId,orgIds);
         }
-
-        if (userQueryParams.getBeginTime()!=null&&!"".equals(userQueryParams.getBeginTime())){
-            queryWrapper.ge(SysUser::getCreateTime, LocalDateTime.of(LocalDate.parse(userQueryParams.getBeginTime()), LocalTime.MIN));
-        }
-        if (userQueryParams.getEndTime()!=null&&!"".equals(userQueryParams.getEndTime())){
-            queryWrapper.le(SysUser::getCreateTime,LocalDateTime.of(LocalDate.parse(userQueryParams.getEndTime()),LocalTime.MAX));
+        try {
+            if (userQueryParams.getBeginTime()!=null&&!"".equals(userQueryParams.getBeginTime())){
+                queryWrapper.ge(SysUser::getCreateTime, LocalDateTime.of(LocalDate.parse(userQueryParams.getBeginTime()), LocalTime.MIN));
+            }
+            if (userQueryParams.getEndTime()!=null&&!"".equals(userQueryParams.getEndTime())){
+                queryWrapper.le(SysUser::getCreateTime,LocalDateTime.of(LocalDate.parse(userQueryParams.getEndTime()),LocalTime.MAX));
+            }
+        } catch (Exception e) {
+            return new ResponseResult(500,"日期格式出错");
         }
         //设置Page
         if (userQueryParams.getPageNum()==null||userQueryParams.getPageNum()<=0){
@@ -269,11 +272,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             return false;
         }
         //邮箱验证,可以为null
-        if (sysUser.getEmail()!=null&&!checkEmail(sysUser.getEmail())){
+        if (sysUser.getEmail()!=null&&!CommonUtils.checkEmail(sysUser.getEmail())){
             return false;
         }
         //手机验证,可以为null
-        if (sysUser.getPhoneNumber()!=null&&!checkPhone(sysUser.getPhoneNumber())){
+        if (sysUser.getPhoneNumber()!=null&&!CommonUtils.checkPhone(sysUser.getPhoneNumber())){
             return false;
         }
         //用户名大于2
@@ -328,11 +331,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             return false;
         }
         //邮箱验证,可以为null
-        if (sysUser.getEmail()!=null&&!checkEmail(sysUser.getEmail())){
+        if (sysUser.getEmail()!=null&&!CommonUtils.checkEmail(sysUser.getEmail())){
             return false;
         }
         //手机验证,可以为null
-        if (sysUser.getPhoneNumber()!=null&&!checkPhone(sysUser.getPhoneNumber())){
+        if (sysUser.getPhoneNumber()!=null&&!CommonUtils.checkPhone(sysUser.getPhoneNumber())){
             return false;
         }
         //性别  可以使用这函数
@@ -395,25 +398,5 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         return orgIds;
     }
 
-    //验证手机号
-    public static boolean checkPhone(String phone){
-        //以1开头,中间两个可匹配 最后八个数字
-        Pattern p = Pattern.compile("^1(3\\d|4[5-9]|5[0-35-9]|6[2567]|7[0-8]|8\\d|9[0-35-9])\\d{8}$");
-        if(p.matcher(phone).matches()){
-            return true;
-        }
-        return false;
-    }
-    //验证邮箱
-    public static boolean checkEmail(String email) {
-        String regEx1 = "^([a-z0-9A-Z]+[-|\\.]?)+[a-z0-9A-Z]@([a-z0-9A-Z]+(-[a-z0-9A-Z]+)?\\.)+[a-zA-Z]{2,}$";
-        Pattern p;
-        Matcher m;
-        p = Pattern.compile(regEx1);
-        m = p.matcher(email);
-        if (m.matches()){
-            return true;
-        }
-        return false;
-    }
+
 }

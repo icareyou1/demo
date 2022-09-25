@@ -1,10 +1,15 @@
 package com.fentric.pojo;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * <p>
@@ -14,7 +19,7 @@ import java.time.LocalDateTime;
  * @author zhouqi
  * @since 2022-08-08
  */
-@TableName("iot_device")
+@TableName(value = "iot_device")
 public class IotDevice implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -23,6 +28,9 @@ public class IotDevice implements Serializable {
      * 设备id
      */
     @TableId(value = "device_id", type = IdType.AUTO)
+
+    //此处是为了解决数据失真问题(Long在java18位,在前端只有16位)
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long deviceId;
 
     /**
@@ -78,6 +86,12 @@ public class IotDevice implements Serializable {
      * 设备类型id
      */
     private Long categoryId;
+
+    /**
+     * 设备拥有的标签
+     * @return
+     */
+    private String tagIds;
 
     public Long getDeviceId() {
         return deviceId;
@@ -183,22 +197,31 @@ public class IotDevice implements Serializable {
         this.categoryId = categoryId;
     }
 
+    public String getTagIds() {
+        return tagIds;
+    }
+
+    public void setTagIds(String tagIds) {
+        this.tagIds = tagIds;
+    }
+
     @Override
     public String toString() {
         return "IotDevice{" +
-        "deviveId = " + deviceId +
-        ", deviceName = " + deviceName +
-        ", deviceImage = " + deviceImage +
-        ", deviceAddress = " + deviceAddress +
-        ", deviceActiveTime = " + deviceActiveTime +
-        ", deviceIp = " + deviceIp +
-        ", status = " + status +
-        ", deleted = " + deleted +
-        ", comment = " + comment +
-        ", createTime = " + createTime +
-        ", updateTime = " + updateTime +
-        ", userId = " + userId +
-        ", categoryId = " + categoryId +
-        "}";
+                "deviceId=" + deviceId +
+                ", deviceName='" + deviceName + '\'' +
+                ", deviceImage='" + deviceImage + '\'' +
+                ", deviceAddress='" + deviceAddress + '\'' +
+                ", deviceActiveTime=" + deviceActiveTime +
+                ", deviceIp='" + deviceIp + '\'' +
+                ", status='" + status + '\'' +
+                ", deleted='" + deleted + '\'' +
+                ", comment='" + comment + '\'' +
+                ", createTime=" + createTime +
+                ", updateTime=" + updateTime +
+                ", userId=" + userId +
+                ", categoryId=" + categoryId +
+                ", tagIds=" + tagIds +
+                '}';
     }
 }
